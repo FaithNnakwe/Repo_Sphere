@@ -1,20 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from "react";
+import LoginPage from "./LoginPage";
 
 function App() {
-    const [message, setMessage] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [ghUser, setGhUser] = useState<string | null>(null);
 
-    useEffect(() => {
-        // Fetch data from the backend
-        fetch('http://localhost:5000/api/message')
-            .then(response => response.json())
-            .then(data => setMessage(data.message));
-    }, []);
+  useEffect(() => {
+    fetch("http://localhost:3000/auth/me", {
+      credentials: "include", // 🔴 REQUIRED for cookies
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.loggedIn) {
+          setIsLoggedIn(true);
+          setGhUser(data.ghUser);
+        } else {
+          setIsLoggedIn(false);
+        }
+      })
+      .catch(() => setIsLoggedIn(false));
+  }, []);
 
-    return (
-        <div className="App">
-            <h1>{message}</h1>
-        </div>
-    );
+  // ⏳ While checking auth status
+  if (isLoggedIn === null) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div className="App">
+      {isLoggedIn ? (
+        <>
+          <h2>Welcome, {ghUser}</h2>
+        </>
+      ) : (
+        <LoginPage />
+      )}
+    </div>
+  );
 }
 
 export default App;
