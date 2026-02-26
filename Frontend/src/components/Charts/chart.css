@@ -1,0 +1,36 @@
+.metrics-container {
+  margin-bottom: 30px;
+}
+
+.chart-card {
+  background-color: #ffffff;
+  border: 1px solid #d1d5da;
+  border-radius: 6px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(27, 31, 35, 0.12), 0 8px 24px rgba(27, 31, 35, 0.12);
+}
+
+.chart-title {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2C2C2C;
+}
+
+.chart-placeholder {
+  background-color: #f9f9f9;
+  border: 1px solid #d1d5da;
+  border-radius: 4px;
+  padding: 40px;
+  text-align: center;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 14px;
+}
+
+.chart-placeholder p {
+  margin: 0;
+}

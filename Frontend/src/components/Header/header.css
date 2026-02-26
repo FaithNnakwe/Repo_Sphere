@@ -1,0 +1,78 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #d1d5da;
+  gap: 20px;
+}
+
+.header-left {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.repo-dropdown,
+.date-display {
+  padding: 8px 16px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5da;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #2C2C2C;
+}
+
+.dropdown-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+  color: #2C2C2C;
+}
+
+.date-display {
+  min-width: 80px;
+  text-align: center;
+}
+
+.header-right {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.search-bar {
+  padding: 8px 16px;
+  border: 1px solid #d1d5da;
+  border-radius: 6px;
+  width: 250px;
+  font-size: 14px;
+}
+
+.search-bar:focus {
+  outline: none;
+  border-color: #00A3FF;
+  box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.1);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #ffffff;
+  border: 1px solid #d1d5da;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #2C2C2C;
+}
+
+.user-icon {
+  font-size: 16px;
+}
