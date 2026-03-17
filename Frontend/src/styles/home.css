@@ -1,0 +1,71 @@
+.home-container{
+  height:100vh;
+  background:black;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  color:white;
+  font-family:"Segoe UI",sans-serif;
+}
+
+/* card */
+
+.profile-card{
+  background:#111;
+  padding:40px;
+  width:340px;
+  border-radius:14px;
+  text-align:center;
+  box-shadow:0 10px 25px rgba(0,0,0,0.4);
+}
+
+/* avatar */
+
+.avatar{
+  width:120px;
+  border-radius:50%;
+  margin-bottom:20px;
+  border:4px solid #FF6F61;
+}
+
+/* github username */
+
+.github-username{
+  color:#bbb;
+  margin-bottom:25px;
+}
+
+/* buttons */
+
+.button-group{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+/* github link */
+
+.profile-btn{
+  text-decoration:none;
+  padding:10px;
+  border-radius:8px;
+  background:#FFD95F;
+  color:black;
+  font-weight:600;
+}
+
+/* logout */
+
+.logout-btn{
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  background:#FFA552;
+  color:black;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.logout-btn:hover{
+  opacity:0.9;
+}
