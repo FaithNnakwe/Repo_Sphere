@@ -1,6 +1,23 @@
-import './SettingIndex.css'
+import React, { useState } from 'react';
+import { Account } from './tabs/Account';
+import { Appearance } from './tabs/Appearance';
+import { Security } from './tabs/Security';
+import { Notification } from './tabs/Notification';
+import './SettingIndex.css';
 
 function Settings() {
+    const [activeTab, setActiveTab] = useState('account');
+
+    const renderTabContent = () => {
+        switch (activeTab) {
+            case 'account': return <Account />;
+            case 'appearance': return <Appearance />;
+            case 'security': return <Security />;
+            case 'notification': return <Notification />;
+            default: return <Appearance />;
+        }
+    }
+
     return (
         <div className="Settings">
             {/* Top Row: Title and Search Bar */}
@@ -13,67 +30,17 @@ function Settings() {
 
             {/* RepoSphere Settings Navigation - Updated to Tab Style */}
             <nav className="settings-nav">    
-                <button className="active">Account</button>
-                <button>Appearance</button>
-                <button>Notifications <span className="badge"></span></button>
-                <button>Security</button>
+                <button onClick={() => setActiveTab('account')} className="active">Account</button>
+                <button onClick={() => setActiveTab('appearance')}>Appearance</button>
+                <button onClick={() => setActiveTab('notification')}>Notifications <span className="badge"></span></button>
+                <button onClick={() => setActiveTab('security')}>Security</button>
             </nav>
 
-            {/* Section Header: Account Info */}
-            <div className="section-intro">
-                <div className="intro-text">
-                    <h2>Personal info</h2>
-                    <p>Update your personal details here.</p>
-                </div>
-            
-            {/* Personal Form Content: Personal Info */}
-            <div className ="Personal-contents">
-                <div className="form-row">
-                    <label>Username</label>
-                        <div className="Username-inputs">
-                        <input type="text" placeholder="Enter your username" />
-                    </div>
-                </div>
+            <div className="tab-content">
+                {renderTabContent()}
             </div>
-
-            {/* Personal Form Content: Bio */}
-            <div className = "Personal-contents-bio">
-                <div className="form-row">
-                    <label>Bio</label>
-                        <div className="Bio-inputs">
-                        <textarea placeholder="Tell us about yourself"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            {/* Personal Form Content: Role */}
-            <div className = "Personal-contents-role">
-                <div className="form-row">
-                    <label>Role</label> 
-                        <div className="Role-inputs">
-                        <select>
-                            <option value="">Select your role</option>
-                            <option value="Developer">Developer</option>
-                            <option value="Designer">Designer</option>
-                            <option value="Manager">Manager</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-
-            {/* Action Buttons: Save and cancel*/}
-
-                <div className="intro-actions">
-                    <button className="btn-spacing">Save</button>
-                    <button className="btn-spacing">Cancel</button>
-                </div>
-            </div>
-            
-            {/* Form content would go here */}
         </div>
     )
 }
 
-export default Settings
+export default Settings;
