@@ -20,7 +20,8 @@ export const Appearance = () => {
             </div>
             
             <div className="theme-form-row">
-                <label>Theme</label>
+                <h2>Theme</h2>
+                <p>Choose between light, dark, or system default themes.</p>
                 <div className="Theme-inputs">
                     <select>
                         <option value="light">Light Mode</option>
@@ -31,7 +32,8 @@ export const Appearance = () => {
             </div>
 
             <div className="font-size-row">
-                <label>Font Size</label>
+                <h2>Font Size</h2>
+                <p>Adjust the font size for better readability.</p>
                 <input type="range" min="12" max="24" />
             </div>
 

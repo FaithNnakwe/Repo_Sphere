@@ -133,3 +133,20 @@ input:checked + .slider:before {
   align-items: center;
   justify-content: space-between;
 }
+
+/* Bigger dropdowns for Appearance + other settings */
+.Theme-inputs select,
+.Role-inputs select,
+#google_translate_element select {
+  min-width: 220px;
+  height: 42px;
+  padding: 8px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+}
+
+/* Ensure the Google Translate widget respects the above sizing */
+#google_translate_element {
+  margin-top: 8px;
+}

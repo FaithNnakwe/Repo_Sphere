@@ -1,4 +1,25 @@
+// Changes 
+import React, { useState } from 'react';
+import {toast} from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
+
 export const Notification = () => {
+  const [commits, setCommits] = useState(true);
+  const [comments, setComments] = useState(true);
+  const [codeReviews, setCodeReviews] = useState(true);
+  const [issues, setIssues] = useState(true);
+  const [merge, setMerge] = useState(true);
+  const [pullRequests, setPullRequests] = useState(true);
+  const [email, setEmail] = useState(true);
+  const [inApp, setInApp] = useState(true);
+
+  const handleToggle = (setter: React.Dispatch<React.SetStateAction<boolean>>, name: string) => {
+    setter(prev => {
+      const newValue = !prev;
+      toast.success(`${name} notifications ${newValue ? 'enabled' : 'disabled'}`);
+      return newValue;
+    });
+  };
   return (
     <div className="Notifications-content">
         <div className="section-intro">
@@ -14,7 +35,7 @@ export const Notification = () => {
             <div className="Delivery-row">
                 <span>Commits</span>
                 <label className ="Switch">
-                    <input type="checkbox" defaultChecked />
+                    <input type="checkbox" checked={commits} onChange={() => handleToggle(setCommits, 'Commits')} />
                     <span className="slider round"></span>
                 </label>
             </div>
@@ -22,7 +43,7 @@ export const Notification = () => {
             <div className ="Delivery-row">
                 <span>Comments</span>
                 <label className ="Switch">
-                    <input type="checkbox" defaultChecked />
+                    <input type="checkbox" checked={comments} onChange={() => handleToggle(setComments, 'Comments')} />
                     <span className="slider round"></span>
                 </label>
             </div>
@@ -30,7 +51,7 @@ export const Notification = () => {
             <div className ="Delivery-row">
                 <span>Code Reviews</span>
                 <label className ="Switch">
-                    <input type="checkbox" defaultChecked />
+                    <input type="checkbox" checked={codeReviews} onChange={() => handleToggle(setCodeReviews, 'Code Reviews')} />
                     <span className="slider round"></span>
                 </label>
             </div>
@@ -38,7 +59,7 @@ export const Notification = () => {
             <div className ="Delivery-row">
                 <span>Issues</span>
                 <label className ="Switch">
-                    <input type="checkbox" defaultChecked />
+                    <input type="checkbox" checked={issues} onChange={() => handleToggle(setIssues, 'Issues')} />
                     <span className="slider round"></span>
                 </label>
             </div>
@@ -46,7 +67,7 @@ export const Notification = () => {
             <div className ="Delivery-row">
                 <span>Merge</span>
                 <label className ="Switch">
-                    <input type="checkbox" defaultChecked />
+                    <input type="checkbox" checked={merge} onChange={() => handleToggle(setMerge, 'Merge')} />
                     <span className="slider round"></span>
                 </label>
             </div>
@@ -55,7 +76,7 @@ export const Notification = () => {
             <div className ="Delivery-row">
                 <span>Pull Requests</span>
                 <label className ="Switch">
-                    <input type="checkbox" defaultChecked />
+                    <input type="checkbox" checked={pullRequests} onChange={() => handleToggle(setPullRequests, 'Pull Requests')} />
                     <span className="slider round"></span>
                 </label>
             </div>
@@ -69,7 +90,7 @@ export const Notification = () => {
             <div className="Delivery-row">
                 <span>Email</span>
                 <label className ="Switch">
-                    <input type="checkbox" defaultChecked />
+                    <input type="checkbox" checked={email} onChange={() => handleToggle(setEmail, 'Email')} />
                     <span className="slider round"></span>
                 </label>
             </div>
@@ -77,7 +98,7 @@ export const Notification = () => {
             <div className="Delivery-row">
                 <span>In-App</span>
                 <label className ="Switch">
-                    <input type="checkbox" defaultChecked />
+                    <input type="checkbox" checked={inApp} onChange={() => handleToggle(setInApp, 'In-App')} />
                     <span className="slider round"></span>
                 </label>
             </div>
@@ -111,9 +132,6 @@ export const Notification = () => {
 
 
     </div>
-
-
-
 
     );
 };
