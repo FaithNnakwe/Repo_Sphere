@@ -1,5 +1,5 @@
 // RepoSphere GitHub API service module 
-
+// This module provides functions to interact with the GitHub API using Octokit.
 require('dotenv').config();
 const express = require('express');
 const { Octokit } = require("@octokit/rest");
