@@ -1,4 +1,8 @@
+import Settings from './SettingPages/Settings';    
 import React, { useState, useEffect } from 'react';
+import { ToastContainer } from 'react-toastify';
+import "react-toastify/dist/ReactToastify.css";
+
 
 function App() {
     const [message, setMessage] = useState('');
@@ -13,8 +17,12 @@ function App() {
     return (
         <div className="App">
             <h1>{message}</h1>
+            <Settings />
+            <ToastContainer />
         </div>
     );
+
+
 }
 
 export default App;
