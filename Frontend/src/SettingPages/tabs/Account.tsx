@@ -1,5 +1,5 @@
 // Account
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
 export const Account = () => {
@@ -85,7 +85,7 @@ export const Account = () => {
             });
 
             if (response.ok) {
-                const result = await response.json();
+                await response.json();
                 toast.success('Profile updated successfully!');
                 
                 // Update original data to current values

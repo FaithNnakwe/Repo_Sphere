@@ -1,5 +1,5 @@
 import Settings from './SettingPages/Settings';    
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ToastContainer } from 'react-toastify';
 import "react-toastify/dist/ReactToastify.css";
 
