@@ -6,7 +6,7 @@ const cookieParser = require("cookie-parser");
 const crypto = require("crypto");
 
 // ✅ Import database connection
-const { checkConnection } = require("../RepoSphere-app/db.js");
+const { checkConnection } = require("./db.js");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
