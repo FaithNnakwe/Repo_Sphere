@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 
 const express = require("express");
@@ -6,25 +5,30 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const crypto = require("crypto");
 
+// ✅ Import database connection
+const { checkConnection } = require("../RepoSphere-app/db.js");
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL, 
-    //cookies
-    credentials: true,              
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
   })
 );
+
 app.use(cookieParser());
 app.use(express.json());
 
-// route
-app.get("/api/hello", (req, res) => {
-  res.json({ message: "Hello from Express!" });
+/* ------------------- TEST ROUTE ------------------- */
+app.get("/api/message", (req, res) => {
+  res.json({ message: "Hello from Node.js backend!" });
 });
 
-/* Redirect to Github */
+/* ------------------- AUTH ROUTES ------------------- */
+
+// Redirect to GitHub
 app.get("/auth/github", (req, res) => {
   const state = crypto.randomUUID();
   res.cookie("oauth_state", state, { httpOnly: true, sameSite: "lax" });
@@ -39,7 +43,7 @@ app.get("/auth/github", (req, res) => {
   res.redirect(`https://github.com/login/oauth/authorize?${params.toString()}`);
 });
 
-/* Oauth, step 2*/
+// OAuth callback
 app.get("/auth/github/callback", async (req, res) => {
   const { code, state } = req.query;
   const savedState = req.cookies.oauth_state;
@@ -48,7 +52,6 @@ app.get("/auth/github/callback", async (req, res) => {
     return res.status(400).send("Invalid OAuth state.");
   }
 
-  // The access tokan
   const tokenResp = await fetch("https://github.com/login/oauth/access_token", {
     method: "POST",
     headers: {
@@ -67,30 +70,37 @@ app.get("/auth/github/callback", async (req, res) => {
   const accessToken = tokenData.access_token;
 
   if (!accessToken) {
-    return res.status(401).send("OAuth failed. No access token returned.");
+    return res.status(401).send("OAuth failed.");
   }
 
-  // Fetching the github user
+  // Fetch GitHub user
   const userResp = await fetch("https://api.github.com/user", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   const user = await userResp.json();
 
-  // Cookie log in
   res.clearCookie("oauth_state");
   res.cookie("gh_user", user.login, { httpOnly: true, sameSite: "lax" });
 
-  // User to frontend
   res.redirect(`${process.env.FRONTEND_URL}/`);
 });
 
-/*Frontend calling */
+// Check login
 app.get("/auth/me", (req, res) => {
   const ghUser = req.cookies.gh_user;
   if (!ghUser) return res.status(401).json({ loggedIn: false });
   res.json({ loggedIn: true, ghUser });
 });
-console.log("✅ About to call app.listen on PORT:", PORT);
-app.listen(PORT, () => {
+
+/* ------------------- START SERVER ------------------- */
+app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
+
+  // ✅ Check DB connection when server starts
+  try {
+    await checkConnection();
+    console.log("✅ Database connected");
+  } catch (err) {
+    console.error("❌ Database connection failed:", err);
+  }
 });
