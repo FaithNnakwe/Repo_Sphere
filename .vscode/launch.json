@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Frontend: Vite Dev Server",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}/Frontend"
+    },
+    {
+      "name": "Backend: Node App",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/Backend/app.js",
+      "cwd": "${workspaceFolder}/Backend",
+      "envFile": "${workspaceFolder}/Backend/.env",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Run Frontend + Backend",
+      "configurations": [
+        "Frontend: Vite Dev Server",
+        "Backend: Node App"
+      ]
+    }
+  ]
+}
