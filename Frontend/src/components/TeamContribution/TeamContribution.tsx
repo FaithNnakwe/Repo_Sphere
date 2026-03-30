@@ -21,23 +21,27 @@ const TeamContribution = ({
     <div className="team-container">
       <div className="team-card">
         <h3 className="team-title">Team Contribution Breakdown</h3>
-        <div className="team-list">
-          {members.map((member, index) => (
-            <div key={index} className="team-member">
-              <div className="member-icon">{member.icon || "👤"}</div>
-              <div className="member-info">
-                <div className="member-name">{member.name}</div>
-                <div className="progress-bar">
-                  <div 
-                    className="progress-fill" 
-                    style={{ width: `${member.percentage}%` }}
-                  ></div>
+        {members.length === 0 ? (
+          <div className="team-empty">No contribution data yet.</div>
+        ) : (
+          <div className="team-list">
+            {members.map((member, index) => (
+              <div key={index} className="team-member">
+                <div className="member-icon">{member.icon || "👤"}</div>
+                <div className="member-info">
+                  <div className="member-name">{member.name}</div>
+                  <div className="progress-bar">
+                    <div 
+                      className="progress-fill" 
+                      style={{ width: `${member.percentage}%` }}
+                    ></div>
+                  </div>
+                  <div className="member-percentage">{member.percentage}% of commits</div>
                 </div>
-                <div className="member-percentage">[Stats]</div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

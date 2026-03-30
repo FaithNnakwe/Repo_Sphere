@@ -4,11 +4,11 @@
   gap: 12px;
   padding: 15px;
   margin-bottom: 20px;
-  background-color: #2C2C2C;
-  border: 1px solid #d1d5da;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-line);
+  border-left: 4px solid var(--accent-coral);
   border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(27, 31, 35, 0.12), 0 8px 24px rgba(27, 31, 35, 0.12);
-  color: #ffffff;
+  color: var(--color-black);
   font-size: 14px;
 }
 

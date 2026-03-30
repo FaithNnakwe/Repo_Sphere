@@ -11,7 +11,7 @@ const Sidebar = () => {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <div className="logo-placeholder">LOGO</div>
+        <img className="brand-image" src="/Logo.png" alt="Repo Sphere" />
       </div>
 
       <nav className="sidebar-nav">

@@ -7,29 +7,82 @@ import MetricsChart from "../Charts/MetricsChart";
 import TeamContribution from "../TeamContribution/TeamContribution";
 import LanguagesChart from "../Charts/LanguagesChart";
 
-const Dashboard = () => {
+interface DashboardProps {
+  repositories: string[];
+  selectedRepository: string;
+  onRepositoryChange: (repository: string) => void;
+  stats: Array<{
+    icon: string;
+    label: string;
+    value: string | number;
+  }>;
+  alertMessage: string;
+  alertIcon: string;
+  isLoading: boolean;
+  teamMembers: Array<{
+    name: string;
+    percentage: number;
+    icon?: string;
+  }>;
+  commitCount: number;
+  pullRequestCount: number;
+  latestCommitMessage: string;
+  languages: Array<{
+    name: string;
+    percentage: number;
+  }>;
+}
+
+const Dashboard = ({
+  repositories,
+  selectedRepository,
+  onRepositoryChange,
+  stats,
+  alertMessage,
+  alertIcon,
+  isLoading,
+  teamMembers,
+  commitCount,
+  pullRequestCount,
+  latestCommitMessage,
+  languages,
+}: DashboardProps) => {
   return (
     <div className="dashboard-container">
       <Sidebar />
       
       <div className="dashboard-main">
-        <Header />
+        <Header
+          repositories={repositories}
+          selectedRepository={selectedRepository}
+          onRepositoryChange={onRepositoryChange}
+          isLoading={isLoading}
+        />
         
         <div className="dashboard-content">
           <div className="content-header">
             <h1>Repository Dashboard</h1>
-            <p>Track contributions and insights across your repository</p>
+            <p>
+              {selectedRepository
+                ? `Shared metrics view for ${selectedRepository}`
+                : "Track contributions and insights across your repository"}
+            </p>
           </div>
 
-          <AlertBanner />
+          <AlertBanner message={alertMessage} icon={alertIcon} />
           
-          <StatsGrid />
+          <StatsGrid stats={stats} />
           
-          <MetricsChart />
+          <MetricsChart
+            repository={selectedRepository}
+            commitCount={commitCount}
+            pullRequestCount={pullRequestCount}
+            latestCommitMessage={latestCommitMessage}
+          />
           
-          <TeamContribution />
+          <TeamContribution members={teamMembers} />
           
-          <LanguagesChart />
+          <LanguagesChart languages={languages} />
         </div>
       </div>
     </div>

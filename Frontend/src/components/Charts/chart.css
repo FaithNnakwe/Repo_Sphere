@@ -3,23 +3,22 @@
 }
 
 .chart-card {
-  background-color: #ffffff;
-  border: 1px solid #d1d5da;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-line);
   border-radius: 6px;
   padding: 20px;
-  box-shadow: 0 1px 3px rgba(27, 31, 35, 0.12), 0 8px 24px rgba(27, 31, 35, 0.12);
 }
 
 .chart-title {
   margin: 0 0 20px 0;
   font-size: 16px;
   font-weight: 600;
-  color: #2C2C2C;
+  color: var(--color-black);
 }
 
 .chart-placeholder {
-  background-color: #f9f9f9;
-  border: 1px solid #d1d5da;
+  background-color: var(--color-white);
+  border: 1px dashed var(--color-line);
   border-radius: 4px;
   padding: 40px;
   text-align: center;
@@ -27,10 +26,28 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #666;
+  color: var(--color-muted);
   font-size: 14px;
 }
 
 .chart-placeholder p {
   margin: 0;
+}
+
+.metrics-summary {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.metrics-summary p:nth-child(1) strong {
+  color: var(--accent-coral);
+}
+
+.metrics-summary p:nth-child(2) strong {
+  color: var(--accent-yellow);
+}
+
+.metrics-summary p:nth-child(3) strong {
+  color: var(--accent-orange);
 }
