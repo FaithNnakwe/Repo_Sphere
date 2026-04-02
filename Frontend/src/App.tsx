@@ -1,12 +1,20 @@
-import "./index.css";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Login from "./pages/Login";
+import Home from "./pages/Home";
+import SetupProfile from "./pages/SetupProfile";
 import DashboardPage from "./pages/DashboardPage";
+import Settings from "./SettingPages/Settings";
 
-function App() {
+export default function App() {
   return (
-    <div className="App">
-      <DashboardPage />
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/setup-profile" element={<SetupProfile />} />
+        <Route path="/settings" element={<Settings />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
-
-export default App;

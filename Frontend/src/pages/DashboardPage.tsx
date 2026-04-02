@@ -30,6 +30,32 @@ interface LanguageEntry {
   percentage: number;
 }
 
+interface TeamContributionApiMember {
+  login: string;
+  displayName: string;
+  githubDisplayName?: string | null;
+  commits: number;
+  pullRequests: number;
+  issues: number;
+}
+
+interface TeamContributionApiResponse {
+  members: TeamContributionApiMember[];
+  totals: {
+    commits: number;
+    pullRequests: number;
+    issues: number;
+  };
+}
+
+interface TeamMemberViewModel {
+  name: string;
+  commits: number;
+  pullRequests: number;
+  issues: number;
+  percentage: number;
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
 const buildApiUrl = (path: string) => `${API_BASE_URL}${path}`;
@@ -53,8 +79,11 @@ const DashboardPage = () => {
   const [repositories, setRepositories] = useState<RepositoryOption[]>([]);
   const [selectedRepository, setSelectedRepository] = useState<string>("");
   const [commits, setCommits] = useState<CommitApiResponse[]>([]);
-  const [pullRequests, setPullRequests] = useState<PullApiResponse[]>([]);
   const [languages, setLanguages] = useState<LanguageEntry[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMemberViewModel[]>([]);
+  const [commitCount, setCommitCount] = useState<number>(0);
+  const [pullRequestCount, setPullRequestCount] = useState<number>(0);
+  const [issueCount, setIssueCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
@@ -64,12 +93,12 @@ const DashboardPage = () => {
       setErrorMessage("");
 
       try {
-        const response = await fetch(buildApiUrl("/api/repos"));
+        const response = await fetch(buildApiUrl("/api/repos"), {
+          credentials: "include",
+        });
         if (!response.ok) {
           if (response.status === 401 || response.status === 403) {
-            throw new Error(
-              "GitHub authentication required. Configure backend GITHUB_TOKEN (or connect account) and restart backend."
-            );
+            throw new Error("GitHub authentication required. Please log in with GitHub again.");
           }
 
           throw new Error("Unable to load repositories");
@@ -103,8 +132,11 @@ const DashboardPage = () => {
   useEffect(() => {
     if (!selectedRepository) {
       setCommits([]);
-      setPullRequests([]);
       setLanguages([]);
+      setTeamMembers([]);
+      setCommitCount(0);
+      setPullRequestCount(0);
+      setIssueCount(0);
       return;
     }
 
@@ -118,10 +150,19 @@ const DashboardPage = () => {
       setErrorMessage("");
 
       try {
-        const [commitsResponse, pullsResponse, languagesResponse] = await Promise.all([
-          fetch(buildApiUrl(`/api/repos/${owner}/${repo}/commits`)),
-          fetch(buildApiUrl(`/api/repos/${owner}/${repo}/pulls`)),
-          fetch(buildApiUrl(`/api/repos/${owner}/${repo}/languages`)),
+        const [commitsResponse, pullsResponse, languagesResponse, teamResponse] = await Promise.all([
+          fetch(buildApiUrl(`/api/repos/${owner}/${repo}/commits`), {
+            credentials: "include",
+          }),
+          fetch(buildApiUrl(`/api/repos/${owner}/${repo}/pulls`), {
+            credentials: "include",
+          }),
+          fetch(buildApiUrl(`/api/repos/${owner}/${repo}/languages`), {
+            credentials: "include",
+          }),
+          fetch(buildApiUrl(`/api/repos/${owner}/${repo}/team-contributions`), {
+            credentials: "include",
+          }),
         ]);
 
         if (!commitsResponse.ok || !pullsResponse.ok) {
@@ -132,7 +173,29 @@ const DashboardPage = () => {
         const pullsData = (await pullsResponse.json()) as PullApiResponse[];
 
         setCommits(commitsData);
-        setPullRequests(pullsData);
+        setCommitCount(commitsData.length);
+        setPullRequestCount(pullsData.length);
+
+        if (teamResponse.ok) {
+          const teamData = (await teamResponse.json()) as TeamContributionApiResponse;
+          const totalCommits = teamData.totals.commits;
+          const mappedMembers = teamData.members.map((member) => ({
+            name: member.displayName || member.githubDisplayName || member.login,
+            commits: member.commits,
+            pullRequests: member.pullRequests,
+            issues: member.issues,
+            percentage: totalCommits > 0 ? Math.round((member.commits / totalCommits) * 100) : 0,
+          }));
+          setTeamMembers(mappedMembers);
+          setCommitCount(teamData.totals.commits);
+          setPullRequestCount(teamData.totals.pullRequests);
+          setIssueCount(teamData.totals.issues);
+        } else {
+          setTeamMembers([]);
+          setCommitCount(commitsData.length);
+          setPullRequestCount(pullsData.length);
+          setIssueCount(0);
+        }
 
         if (languagesResponse.ok) {
           const languageMap = (await languagesResponse.json()) as Record<string, number>;
@@ -152,8 +215,11 @@ const DashboardPage = () => {
         }
       } catch {
         setCommits([]);
-        setPullRequests([]);
         setLanguages([]);
+        setTeamMembers([]);
+        setCommitCount(0);
+        setPullRequestCount(0);
+        setIssueCount(0);
         setErrorMessage("Could not load repository metrics from backend.");
       } finally {
         setIsLoading(false);
@@ -165,32 +231,13 @@ const DashboardPage = () => {
 
   const stats = useMemo(
     () => [
-      { icon: "📊", label: "Total Number of Commits", value: commits.length },
-      { icon: "🔀", label: "Total Pull Requests", value: pullRequests.length },
-      { icon: "⚠️", label: "Issues Opened", value: "N/A" },
+      { icon: "📊", label: "Total Number of Commits", value: commitCount },
+      { icon: "🔀", label: "Total Pull Requests", value: pullRequestCount },
+      { icon: "⚠️", label: "Issues Opened", value: issueCount },
       { icon: "📝", label: "# Lines of Code", value: "N/A" },
     ],
-    [commits.length, pullRequests.length]
+    [commitCount, pullRequestCount, issueCount]
   );
-
-  const teamMembers = useMemo(() => {
-    const authorTotals = commits.reduce<Record<string, number>>((accumulator, commit) => {
-      const authorName = commit.author?.trim() || "Unknown";
-      accumulator[authorName] = (accumulator[authorName] || 0) + 1;
-      return accumulator;
-    }, {});
-
-    const totalCommits = Object.values(authorTotals).reduce((sum, count) => sum + count, 0);
-
-    return Object.entries(authorTotals)
-      .map(([name, count]) => ({
-        name,
-        percentage: totalCommits > 0 ? Math.round((count / totalCommits) * 100) : 0,
-        icon: "👤",
-      }))
-      .sort((a, b) => b.percentage - a.percentage)
-      .slice(0, 5);
-  }, [commits]);
 
   const alertMessage = useMemo(() => {
     if (errorMessage) {
@@ -221,8 +268,8 @@ const DashboardPage = () => {
       alertIcon={errorMessage ? "⚠️" : "⭐"}
       isLoading={isLoading}
       teamMembers={teamMembers}
-      commitCount={commits.length}
-      pullRequestCount={pullRequests.length}
+      commitCount={commitCount}
+      pullRequestCount={pullRequestCount}
       latestCommitMessage={latestCommitMessage}
       languages={languages}
     />

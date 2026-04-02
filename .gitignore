@@ -9,5 +9,11 @@
 **/.env
 **/.env.*
 
+# Local runtime data
+Backend/data/
+
+# Local editor settings
+.vscode/
+
 # Logs
 **/*.log

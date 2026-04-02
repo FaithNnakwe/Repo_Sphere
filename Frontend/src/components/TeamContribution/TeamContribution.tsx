@@ -2,8 +2,10 @@ import "./team.css";
 
 interface TeamMember {
   name: string;
+  commits: number;
+  pullRequests: number;
+  issues: number;
   percentage: number;
-  icon?: string;
 }
 
 interface TeamContributionProps {
@@ -11,12 +13,13 @@ interface TeamContributionProps {
 }
 
 const TeamContribution = ({
-  members = [
-    { name: "Member 1", percentage: 85, icon: "👤" },
-    { name: "Member 2", percentage: 60, icon: "👥" },
-    { name: "Member 3", percentage: 55, icon: "👤" }
-  ]
+  members = []
 }: TeamContributionProps) => {
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/).slice(0, 2);
+    return parts.map((part) => part[0]?.toUpperCase() || "").join("") || "?";
+  };
+
   return (
     <div className="team-container">
       <div className="team-card">
@@ -27,9 +30,12 @@ const TeamContribution = ({
           <div className="team-list">
             {members.map((member, index) => (
               <div key={index} className="team-member">
-                <div className="member-icon">{member.icon || "👤"}</div>
+                <div className="member-icon">{getInitials(member.name)}</div>
                 <div className="member-info">
                   <div className="member-name">{member.name}</div>
+                  <div className="member-metrics">
+                    {member.commits} commits · {member.pullRequests} PRs · {member.issues} issues
+                  </div>
                   <div className="progress-bar">
                     <div 
                       className="progress-fill" 

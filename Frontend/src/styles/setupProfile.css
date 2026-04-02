@@ -1,0 +1,70 @@
+.setup-container{
+  height:100vh;
+  background:#FFA552;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:"Segoe UI", sans-serif;
+  color:white;
+}
+
+/* card */
+
+.setup-card{
+  background:#111;
+  padding:45px;
+  width:350px;
+  border-radius:14px;
+  text-align:center;
+  box-shadow:0 10px 25px rgba(0,0,0,0.4);
+}
+
+/* title */
+
+.setup-title{
+  font-size:28px;
+  margin-bottom:10px;
+}
+
+/* subtitle */
+
+.setup-subtitle{
+  color:#aaa;
+  margin-bottom:30px;
+}
+
+/* input */
+
+.display-input{
+  width:100%;
+  padding:12px;
+  margin-bottom:20px;
+  border-radius:8px;
+  border:2px solid #333;
+  background:#000;
+  color:white;
+  font-size:16px;
+  outline:none;
+}
+
+.display-input:focus{
+  border-color:#FFD95F;
+}
+
+/* button */
+
+.continue-btn{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:8px;
+  background:#FF6F61;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+.continue-btn:hover{
+  background:#FFA552;
+}

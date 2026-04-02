@@ -21,8 +21,10 @@ interface DashboardProps {
   isLoading: boolean;
   teamMembers: Array<{
     name: string;
+    commits: number;
+    pullRequests: number;
+    issues: number;
     percentage: number;
-    icon?: string;
   }>;
   commitCount: number;
   pullRequestCount: number;
