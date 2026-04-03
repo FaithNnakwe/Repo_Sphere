@@ -1,0 +1,114 @@
+.team-container {
+  margin-bottom: 30px;
+}
+
+.team-card {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  padding: 20px;
+}
+
+.team-title {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-black);
+}
+
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.team-member {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+  padding: 15px;
+  background-color: var(--color-white);
+  border-radius: 4px;
+  border: 1px solid var(--color-line);
+}
+
+.member-icon {
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-black);
+  border-radius: 50%;
+}
+
+.member-info {
+  flex: 1;
+}
+
+.member-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-black);
+  margin-bottom: 6px;
+}
+
+.member-metrics {
+  font-size: 12px;
+  color: var(--color-muted);
+  margin-bottom: 8px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #f3f3f3;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent-coral);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.team-member:nth-child(2) .progress-fill,
+.team-member:nth-child(2) .member-icon {
+  border-color: var(--accent-yellow);
+  background-color: var(--color-white);
+}
+
+.team-member:nth-child(2) .progress-fill {
+  background: var(--accent-yellow);
+}
+
+.team-member:nth-child(3) .progress-fill,
+.team-member:nth-child(3) .member-icon {
+  border-color: var(--accent-orange);
+  background-color: var(--color-white);
+}
+
+.team-member:nth-child(3) .progress-fill {
+  background: var(--accent-orange);
+}
+
+.member-percentage {
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.team-empty {
+  padding: 16px;
+  border: 1px solid var(--color-line);
+  border-radius: 4px;
+  background-color: var(--color-white);
+  color: var(--color-muted);
+  font-size: 14px;
+}
