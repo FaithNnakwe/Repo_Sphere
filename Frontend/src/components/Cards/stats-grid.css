@@ -1,0 +1,24 @@
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stats-grid .stat-card:nth-child(2) .card-icon {
+  border-color: var(--accent-yellow);
+}
+
+.stats-grid .stat-card:nth-child(3) .card-icon {
+  border-color: var(--accent-orange);
+}
+
+.stats-grid .stat-card:nth-child(4) .card-icon {
+  border-color: var(--color-black);
+}
+
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
