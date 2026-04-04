@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Dashboard from "../components/Dashboard/Dashboard";
 import { getCurrentUser, logoutFromGithub } from "../api";
+import { generatePDFReport } from "../utils/pdfGenerator"; // ← ADD THIS LINE HER
 
 interface RepoApiResponse {
   name: string;
@@ -102,6 +103,8 @@ const DashboardPage = () => {
   const [issueCount, setIssueCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("Dashboard"); // ← ADD THIS LINE HERE
 
   // Check authentication and load user info
   useEffect(() => {
@@ -309,6 +312,44 @@ const DashboardPage = () => {
     navigate("/setup-profile");
   };
 
+  // ADD THIS NEW FUNCTION HERE
+const handleGenerateReport = async () => {
+  if (!selectedRepository) {
+    setErrorMessage("Please select a repository first");
+    return;
+  }
+
+  setIsGeneratingReport(true);
+  setErrorMessage("");
+
+  try {
+    const reportData = {
+      repository: selectedRepository,
+      date: new Date().toLocaleString(),
+      stats: stats,
+      teamMembers: teamMembers,
+      languages: languages,
+      commitCount: commitCount,
+      pullRequestCount: pullRequestCount,
+      latestCommitMessage: latestCommitMessage,
+    };
+
+    await generatePDFReport('report-content', reportData);
+  } catch (error) {
+    console.error("Failed to generate report:", error);
+    setErrorMessage("Failed to generate PDF report. Please try again.");
+  } finally {
+    setIsGeneratingReport(false);
+  }
+};
+
+// ADD THE NEW FUNCTION RIGHT AFTER handleGenerateReport
+const handleTabChange = (tab: string) => {
+  setActiveTab(tab);
+  // You can add logic here for different tabs
+  // For example, if tab is "Settings", you might show a different view
+};
+
   const stats = useMemo(
     () => [
       { icon: "📊", label: "Total Number of Commits", value: commitCount },
@@ -347,6 +388,10 @@ const DashboardPage = () => {
       }}
       onLogout={handleLogout}
       onChangeDisplayName={handleChangeDisplayName}
+      onGenerateReport={handleGenerateReport}  // ← ADD THIS LINE
+    isGeneratingReport={isGeneratingReport}  // ← ADD THIS LINE
+    activeTab={activeTab}
+    onTabChange={handleTabChange}
       repositories={repositories.map((repo) => repo.fullName)}
       selectedRepository={selectedRepository}
       onRepositoryChange={setSelectedRepository}

@@ -40,6 +40,10 @@ interface DashboardProps {
   };
   onLogout: () => void;
   onChangeDisplayName: () => void;
+  onGenerateReport?: () => void;
+  isGeneratingReport?: boolean;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
 const Dashboard = ({
@@ -58,10 +62,19 @@ const Dashboard = ({
   userInfo,
   onLogout,
   onChangeDisplayName,
+  onGenerateReport,
+  isGeneratingReport,
+  activeTab,
+  onTabChange,
 }: DashboardProps) => {
   return (
     <div className="dashboard-container">
-      <Sidebar />
+      <Sidebar 
+        activeTab={activeTab} 
+        onTabChange={onTabChange}
+        onGenerateReport={onGenerateReport}
+        isGeneratingReport={isGeneratingReport}
+      />
       
       <div className="dashboard-main">
         <Header
@@ -76,7 +89,7 @@ const Dashboard = ({
         
         <div className="dashboard-content">
           <div className="content-header">
-            <h1>Repository Dashboard</h1>
+            <h1>{activeTab || "Repository Dashboard"}</h1>
             <p>
               {selectedRepository
                 ? `Shared metrics view for ${selectedRepository}`
@@ -86,18 +99,21 @@ const Dashboard = ({
 
           <AlertBanner message={alertMessage} icon={alertIcon} />
           
-          <StatsGrid stats={stats} />
-          
-          <MetricsChart
-            repository={selectedRepository}
-            commitCount={commitCount}
-            pullRequestCount={pullRequestCount}
-            latestCommitMessage={latestCommitMessage}
-          />
-          
-          <TeamContribution members={teamMembers} />
-          
-          <LanguagesChart languages={languages} />
+          {/* Add an id to the content you want to capture for PDF */}
+          <div id="report-content">
+            <StatsGrid stats={stats} />
+            
+            <MetricsChart
+              repository={selectedRepository}
+              commitCount={commitCount}
+              pullRequestCount={pullRequestCount}
+              latestCommitMessage={latestCommitMessage}
+            />
+            
+            <TeamContribution members={teamMembers} />
+            
+            <LanguagesChart languages={languages} />
+          </div>
         </div>
       </div>
     </div>
