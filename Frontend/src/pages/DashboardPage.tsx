@@ -147,6 +147,10 @@ const DashboardPage = () => {
       setErrorMessage("");
 
       try {
+
+        console.log("Fetching repositories from:", buildApiUrl("/api/repos"));
+    console.log("User info:", userInfo);
+
         const response = await fetch(buildApiUrl("/api/repos"), {
           credentials: "include",
         });
@@ -159,15 +163,21 @@ const DashboardPage = () => {
         }
 
         const repoData = (await response.json()) as RepoApiResponse[];
+         console.log("Repositories data:", repoData);
         const parsedRepos = repoData
           .map(parseRepository)
           .filter((repo): repo is RepositoryOption => repo !== null);
 
+          console.log("Parsed repos:", parsedRepos);
+
         setRepositories(parsedRepos);
         if (parsedRepos.length > 0) {
           setSelectedRepository(parsedRepos[0].fullName);
-        }
+        } else {
+      setErrorMessage("No repositories found. Make sure you have access to some repositories.");
+    }
       } catch (error) {
+        console.error("Error loading repositories:", error);
         setRepositories([]);
         setSelectedRepository("");
         if (error instanceof Error) {
