@@ -33,6 +33,13 @@ interface DashboardProps {
     name: string;
     percentage: number;
   }>;
+  userInfo: {
+    displayName: string;
+    githubUser: string;
+    avatarUrl: string;
+  };
+  onLogout: () => void;
+  onChangeDisplayName: () => void;
 }
 
 const Dashboard = ({
@@ -48,6 +55,9 @@ const Dashboard = ({
   pullRequestCount,
   latestCommitMessage,
   languages,
+  userInfo,
+  onLogout,
+  onChangeDisplayName,
 }: DashboardProps) => {
   return (
     <div className="dashboard-container">
@@ -59,6 +69,9 @@ const Dashboard = ({
           selectedRepository={selectedRepository}
           onRepositoryChange={onRepositoryChange}
           isLoading={isLoading}
+          userInfo={userInfo}
+          onLogout={onLogout}
+          onChangeDisplayName={onChangeDisplayName}
         />
         
         <div className="dashboard-content">

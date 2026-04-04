@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Dashboard from "../components/Dashboard/Dashboard";
+import { getCurrentUser, logoutFromGithub } from "../api";
 
 interface RepoApiResponse {
   name: string;
@@ -56,6 +58,13 @@ interface TeamMemberViewModel {
   percentage: number;
 }
 
+interface UserInfo {
+  displayName: string;
+  githubUser: string;
+  avatarUrl: string;
+  isLoggedIn: boolean;
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
 const buildApiUrl = (path: string) => `${API_BASE_URL}${path}`;
@@ -76,6 +85,13 @@ const parseRepository = (repo: RepoApiResponse): RepositoryOption | null => {
 };
 
 const DashboardPage = () => {
+  const navigate = useNavigate();
+  const [userInfo, setUserInfo] = useState<UserInfo>({
+    displayName: "",
+    githubUser: "",
+    avatarUrl: "",
+    isLoggedIn: false,
+  });
   const [repositories, setRepositories] = useState<RepositoryOption[]>([]);
   const [selectedRepository, setSelectedRepository] = useState<string>("");
   const [commits, setCommits] = useState<CommitApiResponse[]>([]);
@@ -86,6 +102,44 @@ const DashboardPage = () => {
   const [issueCount, setIssueCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
+
+  // Check authentication and load user info
+  useEffect(() => {
+    const checkAuthAndLoadUser = async () => {
+      try {
+        const data = await getCurrentUser();
+
+        if (!data.loggedIn) {
+          navigate("/login");
+          return;
+        }
+
+        const storedName = localStorage.getItem("displayName");
+        const resolvedDisplayName = storedName || data.displayName || "";
+
+        if (!resolvedDisplayName) {
+          navigate("/setup-profile");
+          return;
+        }
+
+        if (!storedName && data.displayName) {
+          localStorage.setItem("displayName", data.displayName);
+        }
+
+        setUserInfo({
+          displayName: resolvedDisplayName,
+          githubUser: data.ghUser || "",
+          avatarUrl: `https://github.com/${data.ghUser}.png`,
+          isLoggedIn: true,
+        });
+      } catch (error) {
+        console.error("Failed to load user info:", error);
+        navigate("/login");
+      }
+    };
+
+    checkAuthAndLoadUser();
+  }, [navigate]);
 
   useEffect(() => {
     const loadRepositories = async () => {
@@ -126,8 +180,10 @@ const DashboardPage = () => {
       }
     };
 
-    void loadRepositories();
-  }, []);
+    if (userInfo.isLoggedIn) {
+      void loadRepositories();
+    }
+  }, [userInfo.isLoggedIn]);
 
   useEffect(() => {
     if (!selectedRepository) {
@@ -229,6 +285,20 @@ const DashboardPage = () => {
     void loadRepositoryMetrics();
   }, [selectedRepository]);
 
+  const handleLogout = async () => {
+    localStorage.removeItem("displayName");
+    try {
+      await logoutFromGithub();
+    } finally {
+      window.location.href = "/login";
+    }
+  };
+
+  const handleChangeDisplayName = () => {
+    localStorage.removeItem("displayName");
+    navigate("/setup-profile");
+  };
+
   const stats = useMemo(
     () => [
       { icon: "📊", label: "Total Number of Commits", value: commitCount },
@@ -260,6 +330,13 @@ const DashboardPage = () => {
 
   return (
     <Dashboard
+      userInfo={{
+        displayName: userInfo.displayName,
+        githubUser: userInfo.githubUser,
+        avatarUrl: userInfo.avatarUrl,
+      }}
+      onLogout={handleLogout}
+      onChangeDisplayName={handleChangeDisplayName}
       repositories={repositories.map((repo) => repo.fullName)}
       selectedRepository={selectedRepository}
       onRepositoryChange={setSelectedRepository}
