@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getCurrentUser } from "../api";
+import { getCurrentUser, logoutFromGithub } from "../api";
 import { useNavigate } from "react-router-dom";
 import "../styles/home.css";
 
@@ -18,13 +18,18 @@ export default function Home() {
       }
 
       const storedName = localStorage.getItem("displayName");
+      const resolvedDisplayName = storedName || data.displayName || "";
 
-      if (!storedName) {
+      if (!resolvedDisplayName) {
         navigate("/setup-profile");
         return;
       }
 
-      setDisplayName(storedName);
+      if (!storedName && data.displayName) {
+        localStorage.setItem("displayName", data.displayName);
+      }
+
+      setDisplayName(resolvedDisplayName);
       setGithubUser(data.ghUser || "");
     }
 
@@ -42,9 +47,26 @@ export default function Home() {
 
         <h2>{displayName}</h2>
 
+        <button
+          className="display-name-link"
+          onClick={() => {
+            localStorage.removeItem("displayName");
+            navigate("/setup-profile");
+          }}
+        >
+          Change display name
+        </button>
+
         <p className="github-username">@{githubUser}</p>
 
         <div className="button-group">
+
+          <button
+            className="logout-btn"
+            onClick={() => navigate("/dashboard")}
+          >
+            Go to Dashboard
+          </button>
 
           <a
             href={`https://github.com/${githubUser}`}
@@ -56,9 +78,13 @@ export default function Home() {
 
           <button
             className="logout-btn"
-            onClick={() => {
+            onClick={async () => {
               localStorage.removeItem("displayName");
-              window.location.href = "/login";
+              try {
+                await logoutFromGithub();
+              } finally {
+                window.location.href = "/login";
+              }
             }}
           >
             Logout
