@@ -16,7 +16,7 @@ const Sidebar = ({
   const menuItems = [
     { label: "Dashboard", icon: "📊", action: "navigate" },
     { label: "GitHub Metrics", icon: "📈", action: "navigate" },
-    { label: "Reports", icon: "📋", action: "report" }, // Special action for reports
+    { label: "Download Report", icon: "⬇️", action: "report" }, // Special action for reports
     { label: "Settings", icon: "⚙️", action: "navigate" }
   ];
 
