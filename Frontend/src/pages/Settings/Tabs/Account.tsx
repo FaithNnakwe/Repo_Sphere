@@ -12,44 +12,30 @@ export const Account = () => {
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        // Fetch user data - first try saved profile, then GitHub as fallback
+        // Fetch user data from GitHub first, then merge website-only fields like role.
         const fetchUserData = async () => {
             try {
-                // First, try to get saved profile data
+                let websiteRole = '';
                 const savedResponse = await fetch(`${API_BASE}/api/user/profile`);
-                let profileData = { username: '', bio: '', role: '' };
-                
                 if (savedResponse.ok) {
                     const savedData = await savedResponse.json();
-                    if (savedData.username || savedData.bio) {
-                        // We have saved data, use it
-                        profileData = savedData;
-                    } else {
-                        console.log(`${API_BASE}/api/github/user`);
-
-                        // No saved data, fetch from GitHub
-                        const githubResponse = await fetch(`${API_BASE}/api/github/user`);
-                        if (githubResponse.ok) {
-                            const githubData = await githubResponse.json();
-                            profileData = {
-                                username: githubData.username || '',
-                                bio: githubData.bio || '',
-                                role: '' // GitHub doesn't provide role
-                            };
-                        }
-                    }
-                } else {
-                    // Fallback to GitHub if profile endpoint fails
-                    const githubResponse = await fetch(`${API_BASE}/api/github/user`);
-                    if (githubResponse.ok) {
-                        const githubData = await githubResponse.json();
-                        profileData = {
-                            username: githubData.username || '',
-                            bio: githubData.bio || '',
-                            role: ''
-                        };
-                    }
+                    websiteRole = savedData.role || '';
                 }
+
+                const githubResponse = await fetch(`${API_BASE}/api/github/user`, {
+                    credentials: 'include'
+                });
+
+                if (!githubResponse.ok) {
+                    throw new Error('Failed to fetch authenticated GitHub user. Please log in again.');
+                }
+
+                const githubData = await githubResponse.json();
+                const profileData = {
+                    username: githubData.name || githubData.username || '',
+                    bio: githubData.bio || '',
+                    role: websiteRole
+                };
                 
                 setUsername(profileData.username);
                 setBio(profileData.bio);
@@ -75,34 +61,54 @@ export const Account = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const response = await fetch(`${API_BASE}/api/user/profile`, {
+            const githubResponse = await fetch(`${API_BASE}/api/github/profile`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    name: username,
+                    bio,
+                })
+            });
+
+            if (!githubResponse.ok) {
+                const githubError = await githubResponse.json().catch(() => ({}));
+                throw new Error(githubError.error || 'Failed to update GitHub profile');
+            }
+
+            const githubResult = await githubResponse.json();
+            const syncedName = githubResult?.data?.name || username;
+            const syncedBio = githubResult?.data?.bio || bio;
+
+            const websiteResponse = await fetch(`${API_BASE}/api/user/profile`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    username,
-                    bio,
+                    username: syncedName,
+                    bio: syncedBio,
                     role
                 })
             });
 
-            if (response.ok) {
-                await response.json();
-                toast.success('Profile updated successfully!');
-                
-                // Update original data to current values
-                setOriginalData({
-                    username,
-                    bio,
-                    role
-                });
-            } else {
-                toast.error('Failed to save profile');
+            if (!websiteResponse.ok) {
+                throw new Error('GitHub updated, but failed to mirror changes to website profile');
             }
+
+            setUsername(syncedName);
+            setBio(syncedBio);
+            setOriginalData({
+                username: syncedName,
+                bio: syncedBio,
+                role
+            });
+            toast.success('Profile updated on GitHub and website successfully!');
         } catch (error) {
             console.error('Error saving profile:', error);
-            toast.error('Error saving profile');
+            toast.error(error instanceof Error ? error.message : 'Error saving profile');
         } finally {
             setSaving(false);
         }
@@ -147,14 +153,15 @@ export const Account = () => {
             {/* Personal Form Content: Personal Info */}
             <div className ="Personal-contents">
                 <div className="form-row">
-                    <h2>Username</h2>
+                    <h2>Name</h2>
+                    <p>Change your display name on GitHub. This will also update your profile on our website.</p>
                         <div className="Username-inputs">
                         <input 
                             type="text" 
                             style={{ width: '400px', height: '40px', padding: '8px' }} 
                             value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            placeholder="Enter your username" 
+                            readOnly
+                            placeholder="Enter your name" 
                         />
                     </div>
                 </div>

@@ -33,7 +33,8 @@ app.get('/auth/github', (req, res) => {
   const params = new URLSearchParams({
     client_id: process.env.GITHUB_CLIENT_ID,
     redirect_uri: process.env.GITHUB_CALLBACK_URL,
-    scope: 'read:user repo',
+    scope: 'user repo',
+    prompt: 'consent',
     state,
   });
 
@@ -121,13 +122,15 @@ app.get('/auth/logout', (req, res) => {
 app.get('/api/github/user', async (req, res) => {
     try {
         const { Octokit } = require('@octokit/rest');
-        require('dotenv').config();
+        const ghToken = req.cookies.gh_token;
+
+        if (!ghToken) {
+            return res.status(401).json({ error: 'Not authenticated. Please log in via GitHub.' });
+        }
 
         const octokit = new Octokit({
-            auth: process.env.GITHUB_TOKEN
+            auth: ghToken
         });
-
-        // console.log('GitHub token:', process.env.GITHUB_TOKEN);
 
         const { data } = await octokit.rest.users.getAuthenticated();
         res.json({
@@ -140,6 +143,51 @@ app.get('/api/github/user', async (req, res) => {
     } catch (error) {
         console.error('GitHub API error:', error);
         res.status(500).json({ error: 'Failed to fetch GitHub user data' });
+    }
+});
+
+// Update GitHub user profile (name and bio)
+app.post('/api/github/profile', async (req, res) => {
+    try {
+        const { Octokit } = require('@octokit/rest');
+        const ghToken = req.cookies.gh_token;
+
+        if (!ghToken) {
+            return res.status(401).json({ error: 'Not authenticated. Please log in via GitHub.' });
+        }
+
+        const { name, bio } = req.body;
+
+        if (!name && !bio) {
+          return res.status(400).json({ error: 'Name or bio is required.' });
+        }
+
+        const octokit = new Octokit({ auth: ghToken });
+
+        // Update authenticated GitHub user profile via PATCH /user
+        const { data } = await octokit.request('PATCH /user', {
+          name: name || undefined,
+          bio: bio || undefined,
+          headers: {
+            'X-GitHub-Api-Version': '2026-03-10'
+          }
+        });
+
+        res.json({
+            success: true,
+            message: 'GitHub profile updated successfully',
+            data: {
+                username: data.login,
+                name: data.name || '',
+                bio: data.bio || '',
+                email: data.email || ''
+            }
+        });
+    } catch (error) {
+        console.error('Error updating GitHub profile:', error);
+        const status = error?.status || 500;
+        const detail = error?.response?.data?.message || error?.message || 'Failed to update GitHub profile';
+        res.status(status).json({ error: detail });
     }
 });
 
