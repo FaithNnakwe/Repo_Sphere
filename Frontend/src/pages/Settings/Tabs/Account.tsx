@@ -1,6 +1,7 @@
 // Account
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { API_BASE } from "../../../api";
 
 export const Account = () => {
     const [username, setUsername] = useState('');
@@ -15,7 +16,7 @@ export const Account = () => {
         const fetchUserData = async () => {
             try {
                 // First, try to get saved profile data
-                const savedResponse = await fetch('http://localhost:5000/api/user/profile');
+                const savedResponse = await fetch(`${API_BASE}/api/user/profile`);
                 let profileData = { username: '', bio: '', role: '' };
                 
                 if (savedResponse.ok) {
@@ -24,8 +25,10 @@ export const Account = () => {
                         // We have saved data, use it
                         profileData = savedData;
                     } else {
+                        console.log(`${API_BASE}/api/github/user`);
+
                         // No saved data, fetch from GitHub
-                        const githubResponse = await fetch('http://localhost:5000/api/github/user');
+                        const githubResponse = await fetch(`${API_BASE}/api/github/user`);
                         if (githubResponse.ok) {
                             const githubData = await githubResponse.json();
                             profileData = {
@@ -37,7 +40,7 @@ export const Account = () => {
                     }
                 } else {
                     // Fallback to GitHub if profile endpoint fails
-                    const githubResponse = await fetch('http://localhost:5000/api/github/user');
+                    const githubResponse = await fetch(`${API_BASE}/api/github/user`);
                     if (githubResponse.ok) {
                         const githubData = await githubResponse.json();
                         profileData = {
@@ -72,7 +75,7 @@ export const Account = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const response = await fetch('http://localhost:5000/api/user/profile', {
+            const response = await fetch(`${API_BASE}/api/user/profile`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

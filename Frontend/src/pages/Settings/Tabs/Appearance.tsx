@@ -34,14 +34,18 @@ export const Appearance = () => {
     const [savedFontSize, setSavedFontSize] = useState<number>(DEFAULT_FONT_SIZE);
 
     useEffect(() => {
-        const script = document.createElement('script');
-        script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
-        script.async = true;
-        document.body.appendChild(script);
+        if (!(window as any).googleTranslateElementInit) {
+            (window as any).googleTranslateElementInit = function () {
+                new (window as any).google.translate.TranslateElement({ pageLanguage: 'en' }, 'google_translate_element');
+            };
+        }
 
-        (window as any).googleTranslateElementInit = function() {
-            new (window as any).google.translate.TranslateElement({ pageLanguage: 'en' }, 'google_translate_element');
-        };
+        if (!document.querySelector('script[src*="translate.google.com"]')) {
+            const script = document.createElement('script');
+            script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+            script.async = true;
+            document.body.appendChild(script);
+        }
     }, []);
 
     useEffect(() => {
