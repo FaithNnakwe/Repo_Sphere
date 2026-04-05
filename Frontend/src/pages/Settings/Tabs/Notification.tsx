@@ -10,6 +10,7 @@ export const Notification = () => {
   const [issues, setIssues] = useState(true);
   const [merge, setMerge] = useState(true);
   const [pullRequests, setPullRequests] = useState(true);
+    const [achievements, setAchievements] = useState(true);
   const [email, setEmail] = useState(true);
   const [inApp, setInApp] = useState(true);
   const [quietStart, setQuietStart] = useState('22:00');
@@ -21,6 +22,7 @@ export const Notification = () => {
     issues: true,
     merge: true,
     pullRequests: true,
+    achievements: true,
     email: true,
     inApp: true,
     quietStart: '22:00',
@@ -45,14 +47,12 @@ export const Notification = () => {
     return nowMinutes >= start || nowMinutes < end;
   };
 
-  const handleToggle = (setter: React.Dispatch<React.SetStateAction<boolean>>, name: string) => {
-    setter(prev => {
-      const newValue = !prev;
-      if (!isQuietHours()) {
-        toast.success(`${name} notifications ${newValue ? 'enabled' : 'disabled'}`);
-      }
-      return newValue;
-    });
+  const handleToggle = (setter: React.Dispatch<React.SetStateAction<boolean>>, name: string, currentValue: boolean) => {
+    const newValue = !currentValue;
+    setter(newValue);
+    if (!isQuietHours()) {
+      toast.success(`${name} notifications ${newValue ? 'enabled' : 'disabled'}`);
+    }
   };
 
   const handleSave = () => {
@@ -63,6 +63,7 @@ export const Notification = () => {
       issues,
       merge,
       pullRequests,
+    achievements,
       email,
       inApp,
       quietStart,
@@ -81,6 +82,7 @@ export const Notification = () => {
     setIssues(originalSettings.issues);
     setMerge(originalSettings.merge);
     setPullRequests(originalSettings.pullRequests);
+    setAchievements(originalSettings.achievements);
     setEmail(originalSettings.email);
     setInApp(originalSettings.inApp);
     setQuietStart(originalSettings.quietStart);
@@ -98,6 +100,7 @@ export const Notification = () => {
       setIssues(data.issues ?? true);
       setMerge(data.merge ?? true);
       setPullRequests(data.pullRequests ?? true);
+    setAchievements(data.achievements ?? true);
       setEmail(data.email ?? true);
       setInApp(data.inApp ?? true);
       setQuietStart(data.quietStart ?? '22:00');
@@ -109,6 +112,7 @@ export const Notification = () => {
         issues: data.issues ?? true,
         merge: data.merge ?? true,
         pullRequests: data.pullRequests ?? true,
+        achievements: data.achievements ?? true,
         email: data.email ?? true,
         inApp: data.inApp ?? true,
         quietStart: data.quietStart ?? '22:00',
@@ -132,7 +136,7 @@ export const Notification = () => {
             <div className="Delivery-row">
                 <span>Commits</span>
                 <label className ="Switch">
-                    <input type="checkbox" checked={commits} onChange={() => handleToggle(setCommits, 'Commits')} />
+                    <input type="checkbox" checked={commits} onChange={() => handleToggle(setCommits, 'Commits', commits)} />
                     <span className="slider round"></span>
                 </label>
             </div>
@@ -140,7 +144,7 @@ export const Notification = () => {
             <div className ="Delivery-row">
                 <span>Comments</span>
                 <label className ="Switch">
-                    <input type="checkbox" checked={comments} onChange={() => handleToggle(setComments, 'Comments')} />
+                    <input type="checkbox" checked={comments} onChange={() => handleToggle(setComments, 'Comments', comments)} />
                     <span className="slider round"></span>
                 </label>
             </div>
@@ -148,7 +152,7 @@ export const Notification = () => {
             <div className ="Delivery-row">
                 <span>Code Reviews</span>
                 <label className ="Switch">
-                    <input type="checkbox" checked={codeReviews} onChange={() => handleToggle(setCodeReviews, 'Code Reviews')} />
+                    <input type="checkbox" checked={codeReviews} onChange={() => handleToggle(setCodeReviews, 'Code Reviews', codeReviews)} />
                     <span className="slider round"></span>
                 </label>
             </div>
@@ -156,7 +160,7 @@ export const Notification = () => {
             <div className ="Delivery-row">
                 <span>Issues</span>
                 <label className ="Switch">
-                    <input type="checkbox" checked={issues} onChange={() => handleToggle(setIssues, 'Issues')} />
+                    <input type="checkbox" checked={issues} onChange={() => handleToggle(setIssues, 'Issues', issues)} />
                     <span className="slider round"></span>
                 </label>
             </div>
@@ -164,7 +168,7 @@ export const Notification = () => {
             <div className ="Delivery-row">
                 <span>Merge</span>
                 <label className ="Switch">
-                    <input type="checkbox" checked={merge} onChange={() => handleToggle(setMerge, 'Merge')} />
+                    <input type="checkbox" checked={merge} onChange={() => handleToggle(setMerge, 'Merge', merge)} />
                     <span className="slider round"></span>
                 </label>
             </div>
@@ -173,7 +177,7 @@ export const Notification = () => {
             <div className ="Delivery-row">
                 <span>Pull Requests</span>
                 <label className ="Switch">
-                    <input type="checkbox" checked={pullRequests} onChange={() => handleToggle(setPullRequests, 'Pull Requests')} />
+                    <input type="checkbox" checked={pullRequests} onChange={() => handleToggle(setPullRequests, 'Pull Requests', pullRequests)} />
                     <span className="slider round"></span>
                 </label>
             </div>
@@ -187,7 +191,7 @@ export const Notification = () => {
             <div className="Delivery-row">
                 <span>Email</span>
                 <label className ="Switch">
-                    <input type="checkbox" checked={email} onChange={() => handleToggle(setEmail, 'Email')} />
+                    <input type="checkbox" checked={email} onChange={() => handleToggle(setEmail, 'Email', email)} />
                     <span className="slider round"></span>
                 </label>
             </div>
@@ -195,7 +199,7 @@ export const Notification = () => {
             <div className="Delivery-row">
                 <span>In-App</span>
                 <label className ="Switch">
-                    <input type="checkbox" checked={inApp} onChange={() => handleToggle(setInApp, 'In-App')} />
+                    <input type="checkbox" checked={inApp} onChange={() => handleToggle(setInApp, 'In-App', inApp)} />
                     <span className="slider round"></span>
                 </label>
             </div>
@@ -204,6 +208,13 @@ export const Notification = () => {
         <div className="Achivements-preferences">
             <h3>Achievements</h3>
             <p>Get notified each time you reach to your milestones </p>
+            <div className="Delivery-row">
+                <span>Achievement Alerts</span>
+                <label className ="Switch">
+                    <input type="checkbox" checked={achievements} onChange={() => handleToggle(setAchievements, 'Achievement', achievements)} />
+                    <span className="slider round"></span>
+                </label>
+            </div>
         </div>
 
 
