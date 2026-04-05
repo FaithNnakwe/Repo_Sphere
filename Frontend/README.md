@@ -5,7 +5,8 @@
 ### 1) Frontend environment
 
 - Copy `.env.example` to `.env`.
-- Set `VITE_API_BASE_URL` to your backend base URL (example: `http://localhost:3000`).
+- Set `VITE_API_BASE_URL` to your backend base URL (example: `${API_BASE}
+`).
 - If left empty, frontend will use Vite proxy rules in `vite.config.ts`.
 
 ### 2) Run backend
