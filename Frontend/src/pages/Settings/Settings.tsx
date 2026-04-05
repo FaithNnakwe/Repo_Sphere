@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Account } from './Tabs/Account';
 import { Appearance } from './Tabs/Appearance';
 import { Security } from './Tabs/Security';
@@ -18,18 +18,20 @@ function Settings() {
 
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
-    const filteredTabs = normalizedSearch
-        ? tabItems.filter((tab) =>
-            tab.label.toLowerCase().includes(normalizedSearch) ||
-            tab.terms.some((t) => t.includes(normalizedSearch))
-        )
-        : tabItems;
+    const filteredTabs = useMemo(() =>
+        normalizedSearch
+            ? tabItems.filter((tab) =>
+                tab.label.toLowerCase().includes(normalizedSearch) ||
+                tab.terms.some((t) => t.includes(normalizedSearch))
+            )
+            : tabItems
+    , [normalizedSearch]);
 
     useEffect(() => {
         if (filteredTabs.length > 0 && !filteredTabs.some((t) => t.key === activeTab)) {
             setActiveTab(filteredTabs[0].key);
         }
-    }, [filteredTabs, activeTab]);
+    }, [filteredTabs]);
 
     const renderTabContent = () => {
         switch (activeTab) {
