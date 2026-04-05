@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { logoutFromGithub } from '../../../api';
 
-// 1. Updated Type Definitions
 type Session = { 
-  id: string; // Added ID for granular revocation
+  id: string;
   device: string; 
   location: string; 
   date: string; 
@@ -19,13 +18,14 @@ type OAuthSecurityState = {
   requireReauth: boolean;
 };
 
-// 2. Action types for the Reducer (Centralized logic)
 type Action = 
   | { type: 'LOAD_STORAGE'; payload: OAuthSecurityState }
   | { type: 'REVOKE_ALL' }
   | { type: 'REVOKE_SINGLE_SESSION'; id: string }
   | { type: 'RECONNECT'; now: string }
   | { type: 'TOGGLE_REAUTH' };
+
+const SECURITY_STORAGE_KEY = 'oauthSecurityState';
 
 const securityReducer = (state: OAuthSecurityState, action: Action): OAuthSecurityState => {
   switch (action.type) {
@@ -60,21 +60,24 @@ export const Security = () => {
   const [state, dispatch] = useReducer(securityReducer, defaultState);
   const [loading, setLoading] = useState(false);
 
-  // Load from LocalStorage once on mount
+  const persistRevokedState = () => {
+    localStorage.removeItem(SECURITY_STORAGE_KEY);
+  };
+
   useEffect(() => {
-    const saved = localStorage.getItem('oauthSecurityState');
+    const saved = localStorage.getItem(SECURITY_STORAGE_KEY);
     if (saved) {
       try {
         dispatch({ type: 'LOAD_STORAGE', payload: JSON.parse(saved) });
-      } catch (e) {
-        console.warn('Failed to parse OAuth security state:', e);
+      } catch (error) {
+        console.warn('Failed to parse OAuth security state:', error);
+        dispatch({ type: 'LOAD_STORAGE', payload: defaultState });
       }
     }
   }, []);
 
-  // Automatically save to LocalStorage whenever 'state' changes
   useEffect(() => {
-    localStorage.setItem('oauthSecurityState', JSON.stringify(state));
+    localStorage.setItem(SECURITY_STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
   const handleReconnect = async () => {
@@ -96,7 +99,7 @@ export const Security = () => {
     try {
       await logoutFromGithub();
       dispatch({ type: 'REVOKE_ALL' });
-      localStorage.removeItem('oauthSecurityState');
+      persistRevokedState();
       toast.success('GitHub access revoked. Redirecting to login...');
       setTimeout(() => navigate('/login'), 1500);
     } catch (error) {
@@ -110,7 +113,7 @@ export const Security = () => {
     try {
       await logoutFromGithub();
       dispatch({ type: 'REVOKE_ALL' });
-      localStorage.removeItem('oauthSecurityState');
+      persistRevokedState();
       toast.success('Logged out of all sessions. Redirecting to login...');
       setTimeout(() => navigate('/login'), 1500);
     } catch (error) {
@@ -125,84 +128,88 @@ export const Security = () => {
   };
 
   return (
-    <div className="Security-content">
-      <div className="section-intro">
+    <div className="section-intro">
+      <div className="intro-text">
         <h2>Security Settings</h2>
         <p>Manage your GitHub OAuth security settings and login sessions.</p>
       </div>
 
-      <div className="security-row">
-        <h2>GitHub OAuth Status</h2>
-        <p>View the current status of your GitHub OAuth connection.</p>
-        <p>Status: <strong>{state.connected ? 'Connected' : 'Disconnected'}</strong></p>
-        <p>Last login: {state.lastLogin}</p>
-        <p>Scopes: {state.scopes.length ? state.scopes.join(', ') : 'None'}</p>
+      <div className="Personal-contents">
+        <div className="form-row">
+          <h2>GitHub OAuth Status</h2>
+          <p>View the current status of your GitHub OAuth connection and recent authentication details.</p>
+          <div className="settings-meta-list">
+            <p className="settings-meta-item">Status: <strong>{state.connected ? 'Connected' : 'Disconnected'}</strong></p>
+            <p className="settings-meta-item">Last login: {state.lastLogin}</p>
+            <p className="settings-meta-item">Scopes: {state.scopes.length ? state.scopes.join(', ') : 'None'}</p>
+          </div>
 
-        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-          {state.connected ? (
-            <button className="btn-spacing" onClick={handleRevokeAccess} disabled={loading}>
-              Revoke GitHub Access
+          <div className="settings-inline-actions">
+            {state.connected ? (
+              <button className="btn-spacing" onClick={handleRevokeAccess} disabled={loading}>
+                Revoke GitHub Access
+              </button>
+            ) : (
+              <button className="btn-spacing" onClick={handleReconnect} disabled={loading}>
+                Reconnect GitHub
+              </button>
+            )}
+            <button className="btn-spacing" onClick={handleLogoutAll} disabled={loading}>
+              Logout All Sessions
             </button>
-          ) : (
-            <button className="btn-spacing" onClick={handleReconnect} disabled={loading}>
-              Reconnect GitHub
-            </button>
-          )}
-          <button className="btn-spacing" onClick={handleLogoutAll} disabled={loading}>
-            Logout All Sessions
-          </button>
+          </div>
         </div>
       </div>
 
-      <div className="security-row" style={{ marginTop: '24px' }}>
-        <h3>Protection Options</h3>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-          <input 
-            type="checkbox" 
-            checked={state.requireReauth} 
-            onChange={() => dispatch({ type: 'TOGGLE_REAUTH' })} 
-          />
-          Require GitHub re-authentication for sensitive operations
-        </label>
+      <div className="Personal-contents-bio">
+        <div className="form-row">
+          <h2>Protection Options</h2>
+          <p>Enable additional checks before making sensitive account changes.</p>
+          <label className="settings-checkbox-row">
+            <input
+              type="checkbox"
+              checked={state.requireReauth}
+              onChange={() => dispatch({ type: 'TOGGLE_REAUTH' })}
+            />
+            Require GitHub re-authentication for sensitive operations
+          </label>
+        </div>
       </div>
 
-      <div className="security-row" style={{ marginTop: '24px' }}>
-        <h3>Active Sessions</h3>
-        {state.sessions.length ? (
-          <ul style={{ marginTop: '8px', listStyle: 'none', padding: 0 }}>
-            {state.sessions.map((s) => (
-              <li key={s.id} style={{ 
-                marginBottom: '12px', 
-                display: 'flex', 
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '8px',
-                borderBottom: '1px solid #eee'
-              }}>
-                <div>
-                  <div style={{ fontWeight: 'bold' }}>{s.device}</div>
-                  <div style={{ fontSize: '13px', color: '#666' }}>{s.location} · {s.date}</div>
-                </div>
-                <button 
-                  onClick={() => handleRevokeSingle(s.id)}
-                  style={{ color: '#d9534f', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
-                >
-                  Revoke
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No active sessions.</p>
-        )}
+      <div className="Personal-contents-role">
+        <div className="form-row">
+          <h2>Active Sessions</h2>
+          <p>Review your connected sessions and revoke any device you do not recognize.</p>
+          {state.sessions.length ? (
+            <ul className="security-session-list">
+              {state.sessions.map((s) => (
+                <li key={s.id} className="security-session-item">
+                  <div>
+                    <div className="security-session-title">{s.device}</div>
+                    <div className="security-session-meta">{s.location} · {s.date}</div>
+                  </div>
+                  <button onClick={() => handleRevokeSingle(s.id)} className="security-session-revoke">
+                    Revoke
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p>No active sessions.</p>
+          )}
+        </div>
       </div>
 
-      <div className="button-row" style={{ marginTop: '26px', display: 'flex', gap: '8px' }}>
+      <div className="intro-actions">
+        <button
+          className="btn-spacing"
+          onClick={() => window.location.reload()}
+          disabled={loading}
+        >
+          Reset (Refresh)
+        </button>
         <button className="btn-spacing" onClick={() => toast.success('Settings confirmed.')} disabled={loading}>
           Save Settings
-        </button>
-        <button className="btn-spacing" onClick={() => window.location.reload()}>
-          Reset (Refresh)
         </button>
       </div>
     </div>

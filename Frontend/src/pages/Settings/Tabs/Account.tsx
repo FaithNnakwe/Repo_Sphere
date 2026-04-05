@@ -132,17 +132,6 @@ export const Account = () => {
             </div>
         );
     }
-
-    if (loading) {
-        return (
-            <div className="section-intro">
-                <div className="intro-text">
-                    <h2>Personal info</h2>
-                    <p>Loading your information...</p>
-                </div>
-            </div>
-        );
-    }
     return (
         <div className="section-intro">
             <div className="intro-text">
@@ -158,7 +147,6 @@ export const Account = () => {
                         <div className="Username-inputs">
                         <input 
                             type="text" 
-                            style={{ width: '400px', height: '40px', padding: '8px' }} 
                             value={username}
                             readOnly
                             placeholder="Enter your name" 
@@ -184,12 +172,11 @@ export const Account = () => {
             </div>
 
             {/* Personal Form Content: Role */}
-            <div className = "Personal-contents-role" style={{ marginBottom: '20px' }}>
+            <div className = "Personal-contents-role">
                 <div className="form-row">
                     <h2>Role</h2>
                         <div className="Role-inputs">
                         <select 
-                            style={{ width: '200px', height: '40px', padding: '8px' }}
                             value={role}
                             onChange={(e) => setRole(e.target.value)}
                         >
@@ -206,8 +193,7 @@ export const Account = () => {
             {/* Action Buttons: Save and cancel*/}
             <div className="intro-actions">
                 <button 
-                    className="btn-spacing" 
-                    style={{ marginRight: '10px' }}
+                    className="btn-spacing"
                     onClick={handleCancel}
                     disabled={saving}
                 >

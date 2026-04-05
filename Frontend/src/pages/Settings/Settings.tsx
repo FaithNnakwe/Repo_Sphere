@@ -3,6 +3,7 @@ import { Account } from './Tabs/Account';
 import { Appearance } from './Tabs/Appearance';
 import { Security } from './Tabs/Security';
 import { Notification } from './Tabs/Notification';
+import Sidebar from '../../components/Sidebar/Sidebar';
 import './SettingIndex.css';
 
 function Settings() {
@@ -44,40 +45,46 @@ function Settings() {
     }
 
     return (
-        <div className="Settings">
-            {/* Top Row: Title and Search Bar */}
-            <div className="settings-header-top">
-                <h1>Settings</h1>
-                <div className="search-wrapper">
-                    <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search"
-                    />
+        <div className="settings-page-layout">
+            <Sidebar />
+
+            <main className="settings-main">
+                <div className="Settings">
+                    {/* Top Row: Title and Search Bar */}
+                    <div className="settings-header-top">
+                        <h1>Settings</h1>
+                        <div className="search-wrapper">
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder="Search"
+                            />
+                        </div>
+                    </div>
+
+                    {/* RepoSphere Settings Navigation - Updated to Tab Style */}
+                    <nav className="settings-nav">
+                        {filteredTabs.length ? (
+                            filteredTabs.map((tab) => (
+                                <button
+                                    key={tab.key}
+                                    onClick={() => setActiveTab(tab.key)}
+                                    className={tab.key === activeTab ? 'active' : ''}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))
+                        ) : (
+                            <span style={{ padding: '10px', color: '#999' }}>No matching settings pages</span>
+                        )}
+                    </nav>
+
+                    <div className="tab-content">
+                        {filteredTabs.length ? renderTabContent() : <p>Try another search term.</p>}
+                    </div>
                 </div>
-            </div>
-
-            {/* RepoSphere Settings Navigation - Updated to Tab Style */}
-            <nav className="settings-nav">
-                {filteredTabs.length ? (
-                    filteredTabs.map((tab) => (
-                        <button
-                            key={tab.key}
-                            onClick={() => setActiveTab(tab.key)}
-                            className={tab.key === activeTab ? 'active' : ''}
-                        >
-                            {tab.label}
-                        </button>
-                    ))
-                ) : (
-                    <span style={{ padding: '10px', color: '#999' }}>No matching settings pages</span>
-                )}
-            </nav>
-
-            <div className="tab-content">
-                {filteredTabs.length ? renderTabContent() : <p>Try another search term.</p>}
-            </div>
+            </main>
         </div>
     )
 }
