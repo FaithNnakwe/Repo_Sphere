@@ -1,11 +1,12 @@
+import { Link } from "react-router-dom";
 import "./sidebar.css";
 
 const Sidebar = () => {
   const menuItems = [
-    { label: "Dashboard", icon: "📊" },
-    { label: "GitHub Metrics", icon: "📈" },
-    { label: "Reports", icon: "📋" },
-    { label: "Settings", icon: "⚙️" }
+    { label: "Dashboard", icon: "📊", path: "/dashboard" },
+    { label: "GitHub Metrics", icon: "📈", path: "/" },
+    { label: "Reports", icon: "📋", path: "/" },
+    { label: "Settings", icon: "⚙️", path: "/settings" }
   ];
 
   return (
@@ -16,10 +17,10 @@ const Sidebar = () => {
 
       <nav className="sidebar-nav">
         {menuItems.map((item, index) => (
-          <a key={index} href="#" className="nav-item">
+          <Link key={index} to={item.path} className="nav-item">
             <span className="nav-icon">{item.icon}</span>
             <span className="nav-label">{item.label}</span>
-          </a>
+          </Link>
         ))}
       </nav>
 
