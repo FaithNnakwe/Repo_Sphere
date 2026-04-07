@@ -1,30 +1,30 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import {
+    applyFontSize,
+    applyTheme,
+    clampFontSize,
+    DEFAULT_FONT_SIZE,
+    FONT_STORAGE_KEY,
+    getStoredAppearance,
+    MAX_FONT_SIZE,
+    MIN_FONT_SIZE,
+    THEME_STORAGE_KEY,
+    type ThemeOption,
+} from '../../../utils/appearance';
 
-type ThemeOption = 'light' | 'dark' | 'system';
-const THEME_STORAGE_KEY = 'repoSphereAppearanceTheme';
-const FONT_STORAGE_KEY = 'repoSphereAppearanceFontSize';
-const DEFAULT_FONT_SIZE = 16;
+const FONT_SIZE_PRESETS = [
+    { label: 'Compact', value: 15 },
+    { label: 'Default', value: 17 },
+    { label: 'Comfortable', value: 19 },
+    { label: 'Large', value: 21 },
+];
 
-const getSystemTheme = () => {
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark' as ThemeOption;
-    }
-    return 'light' as ThemeOption;
-};
-
-const applyTheme = (theme: ThemeOption) => {
-    const activeTheme = theme === 'system' ? getSystemTheme() : theme;
-    document.documentElement.setAttribute('data-theme', activeTheme);
-    document.documentElement.style.colorScheme = activeTheme;
-    document.body.classList.remove('light-theme', 'dark-theme');
-    document.body.classList.add(`${activeTheme}-theme`);
-};
-
-const applyFontSize = (size: number) => {
-    const clamped = Math.max(12, Math.min(32, size));
-    document.documentElement.style.fontSize = `${clamped}px`;
-    document.documentElement.style.setProperty('--app-base-font-size', `${clamped}px`);
+const getFontSizeDescription = (size: number) => {
+    if (size <= 15) return 'Compact reading size';
+    if (size <= 17) return 'Balanced everyday reading';
+    if (size <= 19) return 'Comfortable reading support';
+    return 'Large text for reduced eye strain';
 };
 
 export const Appearance = () => {
@@ -34,33 +34,53 @@ export const Appearance = () => {
     const [savedFontSize, setSavedFontSize] = useState<number>(DEFAULT_FONT_SIZE);
 
     useEffect(() => {
-        if (!(window as any).googleTranslateElementInit) {
-            (window as any).googleTranslateElementInit = function () {
-                new (window as any).google.translate.TranslateElement({ pageLanguage: 'en' }, 'google_translate_element');
+        const renderGoogleTranslate = () => {
+            const container = document.getElementById('google_translate_element');
+            const translateApi = (window as any).google?.translate?.TranslateElement;
+
+            if (!container || !translateApi) {
+                return false;
+            }
+
+            if (container.childElementCount > 0) {
+                return true;
+            }
+
+            container.innerHTML = '';
+            new translateApi({ pageLanguage: 'en' }, 'google_translate_element');
+            return true;
+        };
+
+        (window as any).googleTranslateElementInit = renderGoogleTranslate;
+
+        const existingScript = document.querySelector(
+            'script[src*="translate.google.com/translate_a/element.js"]'
+        ) as HTMLScriptElement | null;
+
+        if (renderGoogleTranslate()) {
+            return;
+        }
+
+        if (existingScript) {
+            existingScript.addEventListener('load', renderGoogleTranslate, { once: true });
+            return () => {
+                existingScript.removeEventListener('load', renderGoogleTranslate);
             };
         }
 
-        if (!document.querySelector('script[src*="translate.google.com"]')) {
-            const script = document.createElement('script');
-            script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
-            script.async = true;
-            document.body.appendChild(script);
-        }
+        const script = document.createElement('script');
+        script.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+        script.async = true;
+        script.addEventListener('load', renderGoogleTranslate, { once: true });
+        document.body.appendChild(script);
+
+        return () => {
+            script.removeEventListener('load', renderGoogleTranslate);
+        };
     }, []);
 
     useEffect(() => {
-        const storedTheme = localStorage.getItem(THEME_STORAGE_KEY) as ThemeOption | null;
-        const storedFont = localStorage.getItem(FONT_STORAGE_KEY);
-
-        const initialTheme = storedTheme === 'light' || storedTheme === 'dark' || storedTheme === 'system'
-            ? storedTheme
-            : 'system';
-
-        let initialFont = DEFAULT_FONT_SIZE;
-        if (storedFont) {
-            const parsed = Number(storedFont);
-            if (!Number.isNaN(parsed)) initialFont = Math.max(12, Math.min(24, parsed));
-        }
+        const { theme: initialTheme, fontSize: initialFont } = getStoredAppearance();
 
         setTheme(initialTheme);
         setSavedTheme(initialTheme);
@@ -104,12 +124,12 @@ export const Appearance = () => {
 
     const handleSave = () => {
         localStorage.setItem(THEME_STORAGE_KEY, theme);
-        localStorage.setItem(FONT_STORAGE_KEY, String(fontSize));
+        localStorage.setItem(FONT_STORAGE_KEY, String(clampFontSize(fontSize)));
 
         setSavedTheme(theme);
-        setSavedFontSize(fontSize);
+        setSavedFontSize(clampFontSize(fontSize));
         applyTheme(theme);
-        applyFontSize(fontSize);
+        applyFontSize(clampFontSize(fontSize));
         toast.success('Appearance settings saved.');
     };
 
@@ -143,15 +163,54 @@ export const Appearance = () => {
             <div className="Personal-contents-bio">
                 <div className="form-row font-size-row">
                     <h2>Font Size</h2>
-                    <p>Adjust the font size for better readability ({fontSize}px).</p>
-                    <input
-                        type="range"
-                        min={12}
-                        max={32}
-                        step={1}
-                        value={fontSize}
-                        onChange={(e) => setFontSize(Number(e.target.value))}
-                    />
+                    <p>Increase text size and spacing to reduce eye strain across the app.</p>
+                    <div className="font-size-controls">
+                        <div className="font-size-presets" role="group" aria-label="Font size presets">
+                            {FONT_SIZE_PRESETS.map((preset) => (
+                                <button
+                                    key={preset.value}
+                                    type="button"
+                                    className={`font-size-preset ${fontSize === preset.value ? 'active' : ''}`}
+                                    onClick={() => setFontSize(preset.value)}
+                                >
+                                    {preset.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="font-size-slider-row">
+                            <label htmlFor="appearance-font-size" className="font-size-label">
+                                Text size
+                            </label>
+                            <div className="font-size-value-group">
+                                <span className="font-size-value">{fontSize}px</span>
+                                <span className="font-size-hint">{getFontSizeDescription(fontSize)}</span>
+                            </div>
+                        </div>
+
+                        <input
+                            id="appearance-font-size"
+                            type="range"
+                            min={MIN_FONT_SIZE}
+                            max={MAX_FONT_SIZE}
+                            step={1}
+                            value={fontSize}
+                            onChange={(e) => setFontSize(clampFontSize(Number(e.target.value)))}
+                        />
+
+                        <div className="font-size-range-labels" aria-hidden="true">
+                            <span>{MIN_FONT_SIZE}px</span>
+                            <span>{MAX_FONT_SIZE}px</span>
+                        </div>
+
+                        <div className="font-size-preview">
+                            <p className="font-size-preview-kicker">Preview</p>
+                            <p className="font-size-preview-title">Readable text should feel calm, clear, and easy to scan.</p>
+                            <p className="font-size-preview-body">
+                                This preview reflects your current text size so you can choose a setting that feels comfortable for longer sessions.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
