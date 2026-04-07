@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import Dashboard from "../components/Dashboard/Dashboard";
 import { getCurrentUser, logoutFromGithub } from "../api";
 import { generatePDFReport } from "../utils/pdfGenerator"; // ← ADD THIS LINE HER
+import Settings from "./Settings/Settings"; // Import the Settings component
+import Sidebar from "../components/Sidebar/Sidebar"; // Add this import
+import Header from "../components/Header/Header"; // Add this import
 
 interface RepoApiResponse {
   name: string;
@@ -379,33 +382,67 @@ const handleTabChange = (tab: string) => {
 
   const latestCommitMessage = commits[0]?.message || "No commits available";
 
-  return (
-    <Dashboard
-      userInfo={{
-        displayName: userInfo.displayName,
-        githubUser: userInfo.githubUser,
-        avatarUrl: userInfo.avatarUrl,
-      }}
-      onLogout={handleLogout}
-      onChangeDisplayName={handleChangeDisplayName}
-      onGenerateReport={handleGenerateReport}  // ← ADD THIS LINE
-    isGeneratingReport={isGeneratingReport}  // ← ADD THIS LINE
-    activeTab={activeTab}
-    onTabChange={handleTabChange}
-      repositories={repositories.map((repo) => repo.fullName)}
-      selectedRepository={selectedRepository}
-      onRepositoryChange={setSelectedRepository}
-      stats={stats}
-      alertMessage={alertMessage}
-      alertIcon={errorMessage ? "⚠️" : "⭐"}
-      isLoading={isLoading}
-      teamMembers={teamMembers}
-      commitCount={commitCount}
-      pullRequestCount={pullRequestCount}
-      latestCommitMessage={latestCommitMessage}
-      languages={languages}
-    />
-  );
+   // Render different layouts based on active tab
+  const renderContent = () => {
+    switch (activeTab) {
+      case "Settings":
+        // For Settings, render a different layout without the Dashboard wrapper
+        return (
+          <div className="dashboard-container">
+            <Sidebar 
+              activeTab={activeTab} 
+              onTabChange={handleTabChange}
+              onGenerateReport={handleGenerateReport}
+              isGeneratingReport={isGeneratingReport}
+            />
+            <div className="dashboard-main">
+              <Header
+                repositories={repositories.map((repo) => repo.fullName)}
+                selectedRepository={selectedRepository}
+                onRepositoryChange={setSelectedRepository}
+                isLoading={isLoading}
+                userInfo={userInfo}
+                onLogout={handleLogout}
+                onChangeDisplayName={handleChangeDisplayName}
+              />
+              <div className="dashboard-content">
+                <Settings />
+              </div>
+            </div>
+          </div>
+        );
+      
+      case "Dashboard":
+      case "GitHub Metrics":
+      default:
+        // For dashboard views, render the full Dashboard component
+        return (
+          <Dashboard
+            userInfo={userInfo}
+            onLogout={handleLogout}
+            onChangeDisplayName={handleChangeDisplayName}
+            onGenerateReport={handleGenerateReport}
+            isGeneratingReport={isGeneratingReport}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            repositories={repositories.map((repo) => repo.fullName)}
+            selectedRepository={selectedRepository}
+            onRepositoryChange={setSelectedRepository}
+            stats={stats}
+            alertMessage={alertMessage}
+            alertIcon={errorMessage ? "⚠️" : "⭐"}
+            isLoading={isLoading}
+            teamMembers={teamMembers}
+            commitCount={commitCount}
+            pullRequestCount={pullRequestCount}
+            latestCommitMessage={latestCommitMessage}
+            languages={languages}
+          />
+        );
+    }
+  };
+
+  return renderContent();
 };
 
 export default DashboardPage;
