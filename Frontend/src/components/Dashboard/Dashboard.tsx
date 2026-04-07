@@ -6,7 +6,7 @@ import StatsGrid from "../Cards/StatsGrid";
 import MetricsChart from "../Charts/MetricsChart";
 import TeamContribution from "../TeamContribution/TeamContribution";
 import LanguagesChart from "../Charts/LanguagesChart";
-import type { GitHubNotification } from "../../api";
+import type { DashboardNotification } from "../../api";
 
 interface DashboardProps {
   repositories: string[];
@@ -34,7 +34,7 @@ interface DashboardProps {
     name: string;
     percentage: number;
   }>;
-  notifications: GitHubNotification[];
+  notifications: DashboardNotification[];
   notificationsLoading: boolean;
   notificationsError: string;
   onRemoveNotification: (id: string) => void;

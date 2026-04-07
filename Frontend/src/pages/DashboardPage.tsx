@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "react-toastify";
 import Dashboard from "../components/Dashboard/Dashboard";
+import AchievementCelebration from "../components/AchievementCelebration/AchievementCelebration";
 import {
+  getCurrentUser,
   getGithubNotifications,
   getNotificationSettings,
-  type GitHubNotification,
+  type DashboardNotification,
   type NotificationSettings,
 } from "../api";
 
@@ -65,10 +68,12 @@ interface TeamMemberViewModel {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 const DASHBOARD_NOTIFICATIONS_KEY = "dashboardNotifications";
 const DASHBOARD_DISMISSED_NOTIFICATIONS_KEY = "dashboardDismissedNotifications";
+const DASHBOARD_UNLOCKED_ACHIEVEMENTS_KEY = "dashboardUnlockedAchievements";
+const ACHIEVEMENT_MILESTONES = [1, 25, 100, 250, 500, 1000, 2500, 5000];
 
 const defaultNotificationSettings: Pick<
   NotificationSettings,
-  "commits" | "comments" | "codeReviews" | "issues" | "merge" | "pullRequests" | "inApp"
+  "commits" | "comments" | "codeReviews" | "issues" | "merge" | "pullRequests" | "achievements" | "inApp"
 > = {
   commits: true,
   comments: true,
@@ -76,6 +81,7 @@ const defaultNotificationSettings: Pick<
   issues: true,
   merge: true,
   pullRequests: true,
+  achievements: true,
   inApp: true,
 };
 
@@ -105,18 +111,43 @@ const DashboardPage = () => {
   const [commitCount, setCommitCount] = useState<number>(0);
   const [pullRequestCount, setPullRequestCount] = useState<number>(0);
   const [issueCount, setIssueCount] = useState<number>(0);
+  const [currentUserCommits, setCurrentUserCommits] = useState<number>(0);
+  const [currentGhUser, setCurrentGhUser] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [notifications, setNotifications] = useState<GitHubNotification[]>([]);
+  const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
   const [dismissedNotificationIds, setDismissedNotificationIds] = useState<string[]>([]);
+  const [unlockedMilestones, setUnlockedMilestones] = useState<number[]>([]);
+  const [celebrationQueue, setCelebrationQueue] = useState<number[]>([]);
+  const [activeCelebrationMilestone, setActiveCelebrationMilestone] = useState<number | null>(null);
   const [notificationsLoading, setNotificationsLoading] = useState<boolean>(false);
   const [notificationsError, setNotificationsError] = useState<string>("");
+  const [notificationSettings, setNotificationSettings] =
+    useState<typeof defaultNotificationSettings>(defaultNotificationSettings);
+
+  const unlockedMilestonesStorageKey = useMemo(
+    () => `${DASHBOARD_UNLOCKED_ACHIEVEMENTS_KEY}:${currentGhUser || "guest"}`,
+    [currentGhUser]
+  );
+
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      try {
+        const auth = await getCurrentUser();
+        setCurrentGhUser(auth.ghUser ?? "");
+      } catch {
+        setCurrentGhUser("");
+      }
+    };
+
+    void loadCurrentUser();
+  }, []);
 
   useEffect(() => {
     const storedNotifications = localStorage.getItem(DASHBOARD_NOTIFICATIONS_KEY);
     if (storedNotifications) {
       try {
-        setNotifications(JSON.parse(storedNotifications) as GitHubNotification[]);
+        setNotifications(JSON.parse(storedNotifications) as DashboardNotification[]);
       } catch {
         setNotifications([]);
       }
@@ -133,6 +164,21 @@ const DashboardPage = () => {
   }, []);
 
   useEffect(() => {
+    const storedUnlockedMilestones = localStorage.getItem(unlockedMilestonesStorageKey);
+    if (!storedUnlockedMilestones) {
+      setUnlockedMilestones([]);
+      return;
+    }
+
+    try {
+      const parsedMilestones = JSON.parse(storedUnlockedMilestones) as number[];
+      setUnlockedMilestones(Array.isArray(parsedMilestones) ? parsedMilestones : []);
+    } catch {
+      setUnlockedMilestones([]);
+    }
+  }, [unlockedMilestonesStorageKey]);
+
+  useEffect(() => {
     localStorage.setItem(DASHBOARD_NOTIFICATIONS_KEY, JSON.stringify(notifications));
   }, [notifications]);
 
@@ -142,6 +188,10 @@ const DashboardPage = () => {
       JSON.stringify(dismissedNotificationIds)
     );
   }, [dismissedNotificationIds]);
+
+  useEffect(() => {
+    localStorage.setItem(unlockedMilestonesStorageKey, JSON.stringify(unlockedMilestones));
+  }, [unlockedMilestones, unlockedMilestonesStorageKey]);
 
   useEffect(() => {
     const loadNotifications = async () => {
@@ -154,6 +204,7 @@ const DashboardPage = () => {
           ...defaultNotificationSettings,
           ...savedSettings,
         };
+        setNotificationSettings(resolvedSettings);
 
         if (!resolvedSettings.inApp) {
           setNotificationsLoading(false);
@@ -161,9 +212,15 @@ const DashboardPage = () => {
         }
 
         const fetchedNotifications = await getGithubNotifications(resolvedSettings);
+        const normalizedGithubNotifications: DashboardNotification[] = fetchedNotifications.map(
+          (notification) => ({
+            ...notification,
+            notificationType: "github",
+          })
+        );
 
         setNotifications((currentNotifications) => {
-          const nextNotifications = new Map<string, GitHubNotification>();
+          const nextNotifications = new Map<string, DashboardNotification>();
 
           currentNotifications.forEach((notification) => {
             if (!dismissedNotificationIds.includes(notification.id)) {
@@ -171,7 +228,7 @@ const DashboardPage = () => {
             }
           });
 
-          fetchedNotifications.forEach((notification) => {
+          normalizedGithubNotifications.forEach((notification) => {
             if (!dismissedNotificationIds.includes(notification.id)) {
               nextNotifications.set(notification.id, notification);
             }
@@ -263,6 +320,7 @@ const DashboardPage = () => {
       setCommitCount(0);
       setPullRequestCount(0);
       setIssueCount(0);
+      setCurrentUserCommits(0);
       return;
     }
 
@@ -316,11 +374,21 @@ const DashboardPage = () => {
           setCommitCount(teamData.totals.commits);
           setPullRequestCount(teamData.totals.pullRequests);
           setIssueCount(teamData.totals.issues);
+
+          if (currentGhUser) {
+            const matchedMember = teamData.members.find(
+              (member) => member.login.toLowerCase() === currentGhUser.toLowerCase()
+            );
+            setCurrentUserCommits(matchedMember?.commits ?? 0);
+          } else {
+            setCurrentUserCommits(0);
+          }
         } else {
           setTeamMembers([]);
           setCommitCount(commitsData.length);
           setPullRequestCount(pullsData.length);
           setIssueCount(0);
+          setCurrentUserCommits(0);
         }
 
         if (languagesResponse.ok) {
@@ -346,6 +414,7 @@ const DashboardPage = () => {
         setCommitCount(0);
         setPullRequestCount(0);
         setIssueCount(0);
+        setCurrentUserCommits(0);
         setErrorMessage("Could not load repository metrics from backend.");
       } finally {
         setIsLoading(false);
@@ -353,7 +422,91 @@ const DashboardPage = () => {
     };
 
     void loadRepositoryMetrics();
-  }, [selectedRepository]);
+  }, [selectedRepository, currentGhUser]);
+
+  useEffect(() => {
+    if (activeCelebrationMilestone !== null || celebrationQueue.length === 0) {
+      return;
+    }
+
+    const [nextMilestone, ...remainingQueue] = celebrationQueue;
+    setActiveCelebrationMilestone(nextMilestone);
+    setCelebrationQueue(remainingQueue);
+  }, [activeCelebrationMilestone, celebrationQueue]);
+
+  useEffect(() => {
+    if (!notificationSettings.inApp || !notificationSettings.achievements) {
+      return;
+    }
+
+    const newlyUnlocked = ACHIEVEMENT_MILESTONES.filter(
+      (milestone) => currentUserCommits >= milestone && !unlockedMilestones.includes(milestone)
+    );
+
+    if (newlyUnlocked.length === 0) {
+      return;
+    }
+
+    const now = new Date().toISOString();
+
+    setUnlockedMilestones((currentMilestones) => [
+      ...currentMilestones,
+      ...newlyUnlocked.filter((milestone) => !currentMilestones.includes(milestone)),
+    ]);
+
+    const achievementNotifications: DashboardNotification[] = newlyUnlocked.map((milestone) => ({
+      id: `achievement-${milestone}`,
+      notificationType: "achievement",
+      achievementMilestone: milestone,
+      reason: "achievement",
+      subject: {
+        title: `Milestone unlocked: ${milestone} contributions!`,
+        type: "Achievement",
+        url: null,
+      },
+      repository: {
+        full_name: selectedRepository || "GitHub Contributions",
+        html_url: "",
+      },
+      updated_at: now,
+      url: "",
+    }));
+
+    newlyUnlocked.forEach((milestone) => {
+      toast.success(`Achievement unlocked: ${milestone} contributions!`, {
+        autoClose: 4000,
+      });
+    });
+
+    setCelebrationQueue((currentQueue) => [...currentQueue, ...newlyUnlocked]);
+
+    setNotifications((currentNotifications) => {
+      const nextNotifications = new Map<string, DashboardNotification>();
+
+      currentNotifications.forEach((notification) => {
+        if (!dismissedNotificationIds.includes(notification.id)) {
+          nextNotifications.set(notification.id, notification);
+        }
+      });
+
+      achievementNotifications.forEach((notification) => {
+        if (!dismissedNotificationIds.includes(notification.id)) {
+          nextNotifications.set(notification.id, notification);
+        }
+      });
+
+      return Array.from(nextNotifications.values()).sort(
+        (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      );
+    });
+  }, [
+    currentUserCommits,
+    dismissedNotificationIds,
+    notificationSettings.achievements,
+    notificationSettings.inApp,
+    selectedRepository,
+    unlockedMilestones,
+  ]);
 
   const stats = useMemo(
     () => [
@@ -385,25 +538,33 @@ const DashboardPage = () => {
   const latestCommitMessage = commits[0]?.message || "No commits available";
 
   return (
-    <Dashboard
-      repositories={repositories.map((repo) => repo.fullName)}
-      selectedRepository={selectedRepository}
-      onRepositoryChange={setSelectedRepository}
-      stats={stats}
-      alertMessage={alertMessage}
-      alertIcon={errorMessage ? "⚠️" : "⭐"}
-      isLoading={isLoading}
-      teamMembers={teamMembers}
-      commitCount={commitCount}
-      pullRequestCount={pullRequestCount}
-      latestCommitMessage={latestCommitMessage}
-      languages={languages}
-      notifications={notifications}
-      notificationsLoading={notificationsLoading}
-      notificationsError={notificationsError}
-      onRemoveNotification={handleRemoveNotification}
-      onClearNotifications={handleClearNotifications}
-    />
+    <>
+      <Dashboard
+        repositories={repositories.map((repo) => repo.fullName)}
+        selectedRepository={selectedRepository}
+        onRepositoryChange={setSelectedRepository}
+        stats={stats}
+        alertMessage={alertMessage}
+        alertIcon={errorMessage ? "⚠️" : "⭐"}
+        isLoading={isLoading}
+        teamMembers={teamMembers}
+        commitCount={commitCount}
+        pullRequestCount={pullRequestCount}
+        latestCommitMessage={latestCommitMessage}
+        languages={languages}
+        notifications={notifications}
+        notificationsLoading={notificationsLoading}
+        notificationsError={notificationsError}
+        onRemoveNotification={handleRemoveNotification}
+        onClearNotifications={handleClearNotifications}
+      />
+      {activeCelebrationMilestone !== null && (
+        <AchievementCelebration
+          milestone={activeCelebrationMilestone}
+          onComplete={() => setActiveCelebrationMilestone(null)}
+        />
+      )}
+    </>
   );
 };
 
