@@ -1,12 +1,12 @@
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import "./sidebar.css";
 
 const Sidebar = () => {
   const menuItems = [
-    { label: "Dashboard", icon: "📊", path: "/dashboard" },
-    { label: "GitHub Metrics", icon: "📈", path: "/" },
-    { label: "Reports", icon: "📋", path: "/" },
-    { label: "Settings", icon: "⚙️", path: "/settings" }
+    { label: "Dashboard", icon: "📊", path: "/dashboard", accentClass: "nav-item-dashboard" },
+    { label: "GitHub Metrics", icon: "📈", path: "/", accentClass: "nav-item-metrics" },
+    { label: "Reports", icon: "📋", path: "/", accentClass: "nav-item-reports" },
+    { label: "Settings", icon: "⚙️", path: "/settings", accentClass: "nav-item-settings" }
   ];
 
   return (
@@ -16,11 +16,26 @@ const Sidebar = () => {
       </div>
 
       <nav className="sidebar-nav">
-        {menuItems.map((item, index) => (
-          <Link key={index} to={item.path} className="nav-item">
-            <span className="nav-icon">{item.icon}</span>
-            <span className="nav-label">{item.label}</span>
-          </Link>
+        {menuItems.map((item) => (
+          <NavLink
+            key={`${item.label}-${item.path}`}
+            to={item.path}
+            end={item.path === "/"}
+            className={({ isActive }) =>
+              `nav-item ${item.accentClass}${isActive ? " nav-item-active" : ""}`
+            }
+            aria-label={`Go to ${item.label}`}
+          >
+            {({ isActive }) => (
+              <>
+                <span className="nav-item-main">
+                  <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+                  <span className="nav-label">{item.label}</span>
+                </span>
+                {isActive && <span className="nav-active-indicator" aria-hidden="true" />}
+              </>
+            )}
+          </NavLink>
         ))}
       </nav>
 
