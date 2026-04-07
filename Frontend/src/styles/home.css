@@ -1,22 +1,23 @@
 .home-container{
   height:100vh;
-  background:black;
+  background:var(--color-body-bg);
   display:flex;
   justify-content:center;
   align-items:center;
-  color:white;
+  color:var(--color-text-strong);
   font-family:"Segoe UI",sans-serif;
 }
 
 /* card */
 
 .profile-card{
-  background:#111;
+  background:var(--color-surface);
   padding:40px;
   width:340px;
   border-radius:14px;
   text-align:center;
-  box-shadow:0 10px 25px rgba(0,0,0,0.4);
+  border:1px solid var(--color-line);
+  box-shadow:0 10px 25px var(--color-shadow-strong);
 }
 
 /* avatar */
@@ -31,14 +32,14 @@
 /* github username */
 
 .github-username{
-  color:#bbb;
+  color:var(--color-text-subtle);
   margin-bottom:25px;
 }
 
 .display-name-link{
   border:none;
   background:none;
-  color:#bbb;
+  color:var(--color-text-subtle);
   font-size:12px;
   margin-top:-6px;
   margin-bottom:18px;
@@ -47,7 +48,7 @@
 }
 
 .display-name-link:hover{
-  color:#fff;
+  color:var(--accent-coral);
 }
 
 /* buttons */
@@ -65,7 +66,7 @@
   padding:10px;
   border-radius:8px;
   background:#FFD95F;
-  color:black;
+  color:#111111;
   font-weight:600;
 }
 
@@ -76,7 +77,7 @@
   border:none;
   border-radius:8px;
   background:#FFA552;
-  color:black;
+  color:#111111;
   font-weight:600;
   cursor:pointer;
 }
