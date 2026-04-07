@@ -76,6 +76,11 @@ export type GitHubNotification = {
   url: string;
 };
 
+export type DashboardNotification = GitHubNotification & {
+  notificationType?: "github" | "achievement";
+  achievementMilestone?: number;
+};
+
 /**
  * Fetches unread GitHub notifications from the backend, filtered
  * according to the user's saved preference toggles.
