@@ -418,6 +418,70 @@ input:checked + .slider:before {
   margin-top: 6px;
 }
 
+/* ─── Live GitHub Notifications panel ─────────────────────────────────────── */
+
+.github-notif-list {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 680px;
+}
+
+.github-notif-item {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid #eaecf0;
+  border-radius: 10px;
+  background: #fcfcfd;
+  font-size: 14px;
+  color: #101828;
+}
+
+.notif-type-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: #fff3e8;
+  color: #c76d1f;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.notif-title {
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notif-repo {
+  color: #667085;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.notif-status-msg {
+  color: #667085;
+  font-size: 14px;
+  margin: 0;
+}
+
+.notif-error-msg {
+  color: #b91c1c;
+  font-size: 14px;
+  margin: 0;
+}
+
 .font-size-row input[type="range"]::-webkit-slider-thumb {
   width: 24px;
   height: 24px;

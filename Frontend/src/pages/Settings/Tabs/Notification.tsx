@@ -1,20 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { toast } from 'react-toastify';
-
-type NotificationSettings = {
-  commits: boolean;
-  comments: boolean;
-  codeReviews: boolean;
-  issues: boolean;
-  merge: boolean;
-  pullRequests: boolean;
-  achievements: boolean;
-  email: boolean;
-  inApp: boolean;
-  quietStart: string;
-  quietEnd: string;
-};
+import {
+  getGithubNotifications,
+  getNotificationSettings,
+  saveNotificationSettings,
+} from '../../../api';
+import type { NotificationSettings, GitHubNotification } from '../../../api';
 
 const NOTIFICATION_SETTINGS_KEY = 'notificationSettings';
 
@@ -45,6 +37,9 @@ export const Notification = () => {
   const [quietStart, setQuietStart] = useState('22:00');
   const [quietEnd, setQuietEnd] = useState('08:00');
   const [originalSettings, setOriginalSettings] = useState<NotificationSettings>(defaultSettings);
+  const [loading, setLoading] = useState(false);
+  const [githubNotifications, setGithubNotifications] = useState<GitHubNotification[]>([]);
+  const [notifError, setNotifError] = useState<string | null>(null);
 
   const applySettingsToState = (settings: NotificationSettings) => {
     setCommits(settings.commits);
@@ -58,6 +53,24 @@ export const Notification = () => {
     setInApp(settings.inApp);
     setQuietStart(settings.quietStart);
     setQuietEnd(settings.quietEnd);
+  };
+
+  // Fetches unread GitHub notifications filtered by the user's current preference toggles.
+  // Clears the list when the in-app toggle is off so no stale data is shown.
+  const fetchGithubNotifs = async (prefs: NotificationSettings) => {
+    if (!prefs.inApp) {
+      setGithubNotifications([]);
+      setNotifError(null);
+      return;
+    }
+    try {
+      const notifs = await getGithubNotifications(prefs);
+      setGithubNotifications(notifs);
+      setNotifError(null);
+    } catch (err) {
+      setNotifError(err instanceof Error ? err.message : 'Failed to fetch GitHub notifications');
+      setGithubNotifications([]);
+    }
   };
 
   const parseMinutes = (time: string) => {
@@ -86,7 +99,7 @@ export const Notification = () => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const settings: NotificationSettings = {
       commits,
       comments,
@@ -101,9 +114,17 @@ export const Notification = () => {
       quietEnd,
     };
 
+    setLoading(true);
+    try {
+      await saveNotificationSettings(settings);
+      toast.success('Notification settings saved');
+    } catch {
+      toast.warn('Settings saved locally — sign in to sync across devices.');
+    }
     localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(settings));
     setOriginalSettings(settings);
-    toast.success('Notification settings saved');
+    await fetchGithubNotifs(settings);
+    setLoading(false);
   };
 
   const handleCancel = () => {
@@ -112,22 +133,38 @@ export const Notification = () => {
   };
 
   useEffect(() => {
-    const saved = localStorage.getItem(NOTIFICATION_SETTINGS_KEY);
-    if (saved) {
+    const loadSettings = async () => {
+      setLoading(true);
+      let resolved: NotificationSettings = defaultSettings;
+
       try {
-        const data = JSON.parse(saved) as Partial<NotificationSettings>;
-        const mergedSettings: NotificationSettings = {
-          ...defaultSettings,
-          ...data,
-        };
-        applySettingsToState(mergedSettings);
-        setOriginalSettings(mergedSettings);
-      } catch (error) {
-        console.warn('Unable to parse saved notification settings', error);
-        applySettingsToState(defaultSettings);
-        setOriginalSettings(defaultSettings);
+        // Prefer settings stored on the backend (requires the user to be logged in)
+        const backendSettings = await getNotificationSettings();
+        if (backendSettings) {
+          resolved = { ...defaultSettings, ...backendSettings };
+          localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(resolved));
+        } else {
+          throw new Error('No backend settings');
+        }
+      } catch {
+        // Fall back to localStorage when the backend is unavailable or the user is not logged in
+        const saved = localStorage.getItem(NOTIFICATION_SETTINGS_KEY);
+        if (saved) {
+          try {
+            resolved = { ...defaultSettings, ...(JSON.parse(saved) as Partial<NotificationSettings>) };
+          } catch {
+            // keep defaults
+          }
+        }
       }
-    }
+
+      applySettingsToState(resolved);
+      setOriginalSettings(resolved);
+      await fetchGithubNotifs(resolved);
+      setLoading(false);
+    };
+
+    loadSettings();
   }, []);
 
   return (
@@ -257,15 +294,42 @@ export const Notification = () => {
         </div>
       </div>
 
+      {inApp && (
+        <div className="Personal-contents-role">
+          <div className="form-row">
+            <h2>Live GitHub Notifications</h2>
+            <p>Unread GitHub notifications matching your current preference filters.</p>
+            {loading ? (
+              <p className="notif-status-msg">Loading notifications…</p>
+            ) : notifError ? (
+              <p className="notif-error-msg">{notifError}</p>
+            ) : githubNotifications.length === 0 ? (
+              <p className="notif-status-msg">No unread notifications match your current filters.</p>
+            ) : (
+              <ul className="github-notif-list">
+                {githubNotifications.map((n) => (
+                  <li key={n.id} className="github-notif-item">
+                    <span className="notif-type-tag">{n.subject.type}</span>
+                    <span className="notif-title">{n.subject.title}</span>
+                    <span className="notif-repo">— {n.repository.full_name}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="intro-actions">
         <button
           className="btn-spacing"
           onClick={handleCancel}
+          disabled={loading}
         >
           Cancel
         </button>
-        <button className="btn-spacing" onClick={handleSave}>
-          Save Changes
+        <button className="btn-spacing" onClick={handleSave} disabled={loading}>
+          {loading ? 'Saving…' : 'Save Changes'}
         </button>
       </div>
     </div>

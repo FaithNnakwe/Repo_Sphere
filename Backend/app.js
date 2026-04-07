@@ -243,6 +243,92 @@ app.get('/api/user/profile', (req, res) => {
     }
 });
 
+// GET /api/github/notifications — fetch unread GitHub notifications filtered by user preferences
+app.get('/api/github/notifications', async (req, res) => {
+    try {
+        const { Octokit } = require('@octokit/rest');
+        const ghToken = req.cookies.gh_token;
+
+        if (!ghToken) {
+            return res.status(401).json({ error: 'Not authenticated. Please log in via GitHub.' });
+        }
+
+        const octokit = new Octokit({ auth: ghToken });
+
+        const { data } = await octokit.request('GET /notifications', {
+            all: false,
+            headers: {
+                'X-GitHub-Api-Version': '2022-11-28',
+            },
+        });
+
+        const { commits, comments, codeReviews, issues, merge, pullRequests } = req.query;
+
+        // Map each user preference toggle to the corresponding GitHub notification subject type / reason
+        const filtered = data.filter((n) => {
+            const type = n.subject?.type;   // 'Issue' | 'PullRequest' | 'Commit' | 'Release' | 'Discussion' | 'CheckSuite'
+            const reason = n.reason;         // 'comment' | 'pull_request_review' | 'review_requested' | 'ci_activity' | ...
+
+            if (commits === 'true' && (type === 'Commit' || reason === 'ci_activity')) return true;
+            if (comments === 'true' && (reason === 'comment' || reason === 'mention' || reason === 'team_mention')) return true;
+            if (codeReviews === 'true' && (reason === 'pull_request_review' || reason === 'review_requested')) return true;
+            if (issues === 'true' && type === 'Issue') return true;
+            if (merge === 'true' && type === 'PullRequest' && reason === 'state_change') return true;
+            if (pullRequests === 'true' && type === 'PullRequest') return true;
+            return false;
+        });
+
+        res.json(filtered);
+    } catch (error) {
+        console.error('Error fetching GitHub notifications:', error);
+        const status = error?.status || 500;
+        res.status(status).json({ error: error?.message || 'Failed to fetch GitHub notifications' });
+    }
+});
+
+// GET /api/notifications/settings — load saved notification preference settings for the authenticated user
+app.get('/api/notifications/settings', (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const ghUser = req.cookies.gh_user;
+
+        if (!ghUser) return res.status(401).json({ error: 'Not authenticated.' });
+
+        const filePath = path.join(__dirname, 'data', `notifications-${ghUser}.json`);
+        if (fs.existsSync(filePath)) {
+            res.json(JSON.parse(fs.readFileSync(filePath, 'utf8')));
+        } else {
+            res.json(null);
+        }
+    } catch (error) {
+        console.error('Error loading notification settings:', error);
+        res.status(500).json({ error: 'Failed to load notification settings' });
+    }
+});
+
+// POST /api/notifications/settings — persist notification preference settings for the authenticated user
+app.post('/api/notifications/settings', (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const ghUser = req.cookies.gh_user;
+
+        if (!ghUser) return res.status(401).json({ error: 'Not authenticated.' });
+
+        const settings = req.body;
+        const dataDir = path.join(__dirname, 'data');
+        if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+
+        const filePath = path.join(dataDir, `notifications-${ghUser}.json`);
+        fs.writeFileSync(filePath, JSON.stringify(settings, null, 2));
+        res.json(settings);
+    } catch (error) {
+        console.error('Error saving notification settings:', error);
+        res.status(500).json({ error: 'Failed to save notification settings' });
+    }
+});
+
 app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
 

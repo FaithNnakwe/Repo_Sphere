@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Dashboard from "../components/Dashboard/Dashboard";
+import {
+  getGithubNotifications,
+  getNotificationSettings,
+  type GitHubNotification,
+  type NotificationSettings,
+} from "../api";
 
 interface RepoApiResponse {
   name: string;
@@ -57,6 +63,21 @@ interface TeamMemberViewModel {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+const DASHBOARD_NOTIFICATIONS_KEY = "dashboardNotifications";
+const DASHBOARD_DISMISSED_NOTIFICATIONS_KEY = "dashboardDismissedNotifications";
+
+const defaultNotificationSettings: Pick<
+  NotificationSettings,
+  "commits" | "comments" | "codeReviews" | "issues" | "merge" | "pullRequests" | "inApp"
+> = {
+  commits: true,
+  comments: true,
+  codeReviews: true,
+  issues: true,
+  merge: true,
+  pullRequests: true,
+  inApp: true,
+};
 
 const buildApiUrl = (path: string) => `${API_BASE_URL}${path}`;
 
@@ -86,6 +107,111 @@ const DashboardPage = () => {
   const [issueCount, setIssueCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [notifications, setNotifications] = useState<GitHubNotification[]>([]);
+  const [dismissedNotificationIds, setDismissedNotificationIds] = useState<string[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState<boolean>(false);
+  const [notificationsError, setNotificationsError] = useState<string>("");
+
+  useEffect(() => {
+    const storedNotifications = localStorage.getItem(DASHBOARD_NOTIFICATIONS_KEY);
+    if (storedNotifications) {
+      try {
+        setNotifications(JSON.parse(storedNotifications) as GitHubNotification[]);
+      } catch {
+        setNotifications([]);
+      }
+    }
+
+    const storedDismissedIds = localStorage.getItem(DASHBOARD_DISMISSED_NOTIFICATIONS_KEY);
+    if (storedDismissedIds) {
+      try {
+        setDismissedNotificationIds(JSON.parse(storedDismissedIds) as string[]);
+      } catch {
+        setDismissedNotificationIds([]);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(DASHBOARD_NOTIFICATIONS_KEY, JSON.stringify(notifications));
+  }, [notifications]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      DASHBOARD_DISMISSED_NOTIFICATIONS_KEY,
+      JSON.stringify(dismissedNotificationIds)
+    );
+  }, [dismissedNotificationIds]);
+
+  useEffect(() => {
+    const loadNotifications = async () => {
+      setNotificationsLoading(true);
+      setNotificationsError("");
+
+      try {
+        const savedSettings = await getNotificationSettings();
+        const resolvedSettings = {
+          ...defaultNotificationSettings,
+          ...savedSettings,
+        };
+
+        if (!resolvedSettings.inApp) {
+          setNotificationsLoading(false);
+          return;
+        }
+
+        const fetchedNotifications = await getGithubNotifications(resolvedSettings);
+
+        setNotifications((currentNotifications) => {
+          const nextNotifications = new Map<string, GitHubNotification>();
+
+          currentNotifications.forEach((notification) => {
+            if (!dismissedNotificationIds.includes(notification.id)) {
+              nextNotifications.set(notification.id, notification);
+            }
+          });
+
+          fetchedNotifications.forEach((notification) => {
+            if (!dismissedNotificationIds.includes(notification.id)) {
+              nextNotifications.set(notification.id, notification);
+            }
+          });
+
+          return Array.from(nextNotifications.values()).sort(
+            (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+          );
+        });
+      } catch (error) {
+        if (error instanceof Error) {
+          setNotificationsError(error.message);
+        } else {
+          setNotificationsError("Could not load notifications.");
+        }
+      } finally {
+        setNotificationsLoading(false);
+      }
+    };
+
+    void loadNotifications();
+  }, [dismissedNotificationIds]);
+
+  const handleRemoveNotification = (id: string) => {
+    setDismissedNotificationIds((currentIds) =>
+      currentIds.includes(id) ? currentIds : [...currentIds, id]
+    );
+    setNotifications((currentNotifications) =>
+      currentNotifications.filter((notification) => notification.id !== id)
+    );
+  };
+
+  const handleClearNotifications = () => {
+    setDismissedNotificationIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+      notifications.forEach((notification) => nextIds.add(notification.id));
+      return Array.from(nextIds);
+    });
+    setNotifications([]);
+  };
 
   useEffect(() => {
     const loadRepositories = async () => {
@@ -272,6 +398,11 @@ const DashboardPage = () => {
       pullRequestCount={pullRequestCount}
       latestCommitMessage={latestCommitMessage}
       languages={languages}
+      notifications={notifications}
+      notificationsLoading={notificationsLoading}
+      notificationsError={notificationsError}
+      onRemoveNotification={handleRemoveNotification}
+      onClearNotifications={handleClearNotifications}
     />
   );
 };

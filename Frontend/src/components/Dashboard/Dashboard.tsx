@@ -6,6 +6,7 @@ import StatsGrid from "../Cards/StatsGrid";
 import MetricsChart from "../Charts/MetricsChart";
 import TeamContribution from "../TeamContribution/TeamContribution";
 import LanguagesChart from "../Charts/LanguagesChart";
+import type { GitHubNotification } from "../../api";
 
 interface DashboardProps {
   repositories: string[];
@@ -33,6 +34,11 @@ interface DashboardProps {
     name: string;
     percentage: number;
   }>;
+  notifications: GitHubNotification[];
+  notificationsLoading: boolean;
+  notificationsError: string;
+  onRemoveNotification: (id: string) => void;
+  onClearNotifications: () => void;
 }
 
 const Dashboard = ({
@@ -48,6 +54,11 @@ const Dashboard = ({
   pullRequestCount,
   latestCommitMessage,
   languages,
+  notifications,
+  notificationsLoading,
+  notificationsError,
+  onRemoveNotification,
+  onClearNotifications,
 }: DashboardProps) => {
   return (
     <div className="dashboard-container">
@@ -59,6 +70,11 @@ const Dashboard = ({
           selectedRepository={selectedRepository}
           onRepositoryChange={onRepositoryChange}
           isLoading={isLoading}
+          notifications={notifications}
+          notificationsLoading={notificationsLoading}
+          notificationsError={notificationsError}
+          onRemoveNotification={onRemoveNotification}
+          onClearNotifications={onClearNotifications}
         />
         
         <div className="dashboard-content">
