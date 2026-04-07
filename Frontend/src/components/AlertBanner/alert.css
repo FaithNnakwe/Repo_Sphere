@@ -9,11 +9,11 @@
   border-left: 4px solid var(--accent-coral);
   border-radius: 6px;
   color: var(--color-black);
-  font-size: 14px;
+  font-size: 0.9375rem;
 }
 
 .alert-icon {
-  font-size: 18px;
+  font-size: 1.125rem;
   flex-shrink: 0;
 }
 
