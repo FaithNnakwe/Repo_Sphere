@@ -1,3 +1,4 @@
+// Dashboard.tsx
 import "./dashboard.css";
 import Sidebar from "../Sidebar/Sidebar";
 import Header from "../Header/Header";
@@ -6,6 +7,8 @@ import StatsGrid from "../Cards/StatsGrid";
 import MetricsChart from "../Charts/MetricsChart";
 import TeamContribution from "../TeamContribution/TeamContribution";
 import LanguagesChart from "../Charts/LanguagesChart";
+import type { GitHubNotification } from "../../api";
+import { useLocation } from "react-router-dom";
 
 interface DashboardProps {
   repositories: string[];
@@ -33,17 +36,22 @@ interface DashboardProps {
     name: string;
     percentage: number;
   }>;
-  userInfo: {
+  notifications?: GitHubNotification[];
+  notificationsLoading?: boolean;
+  notificationsError?: string;
+  onRemoveNotification?: (id: string) => void;
+  onClearNotifications?: () => void;
+  userInfo?: {
     displayName: string;
     githubUser: string;
     avatarUrl: string;
   };
-  onLogout: () => void;
-  onChangeDisplayName: () => void;
+  onLogout?: () => void;
+  onChangeDisplayName?: () => void;
   onGenerateReport?: () => void;
   isGeneratingReport?: boolean;
-  activeTab?: string;
   onTabChange?: (tab: string) => void;
+  activeTab?: string;  // Add this line
 }
 
 const Dashboard = ({
@@ -59,18 +67,36 @@ const Dashboard = ({
   pullRequestCount,
   latestCommitMessage,
   languages,
-  userInfo,
-  onLogout,
-  onChangeDisplayName,
-  onGenerateReport,
-  isGeneratingReport,
-  activeTab,
-  onTabChange,
+  notifications = [],
+  notificationsLoading = false,
+  notificationsError = "",
+  onRemoveNotification = () => {},
+  onClearNotifications = () => {},
+  userInfo = {
+    displayName: "User",
+    githubUser: "username",
+    avatarUrl: "",
+  },
+  onLogout = () => {},
+  onChangeDisplayName = () => {},
+  onGenerateReport = () => {},
+  isGeneratingReport = false,
+  onTabChange = () => {},
 }: DashboardProps) => {
+  const location = useLocation();
+  
+  // Determine which tab is active based on the route
+  const getActiveTab = () => {
+    if (location.pathname === "/") return "Dashboard";
+    if (location.pathname === "/github-metrics") return "GitHub Metrics";
+    return "Repository Dashboard";
+  };
+
+  const activeTab = getActiveTab();
+
   return (
     <div className="dashboard-container">
       <Sidebar 
-        activeTab={activeTab} 
         onTabChange={onTabChange}
         onGenerateReport={onGenerateReport}
         isGeneratingReport={isGeneratingReport}
@@ -85,11 +111,16 @@ const Dashboard = ({
           userInfo={userInfo}
           onLogout={onLogout}
           onChangeDisplayName={onChangeDisplayName}
+          notifications={notifications}
+          notificationsLoading={notificationsLoading}
+          notificationsError={notificationsError}
+          onRemoveNotification={onRemoveNotification}
+          onClearNotifications={onClearNotifications}
         />
         
         <div className="dashboard-content">
           <div className="content-header">
-            <h1>{activeTab || "Repository Dashboard"}</h1>
+            <h1>{activeTab}</h1>
             <p>
               {selectedRepository
                 ? `Shared metrics view for ${selectedRepository}`
@@ -99,7 +130,6 @@ const Dashboard = ({
 
           <AlertBanner message={alertMessage} icon={alertIcon} />
           
-          {/* Add an id to the content you want to capture for PDF */}
           <div id="report-content">
             <StatsGrid stats={stats} />
             

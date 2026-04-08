@@ -227,10 +227,178 @@
   background-color: #ffeef0;
 }
 
+/* Notification Bell Styles */
+.notification-bell {
+  position: relative;
+}
+
+.notification-bell-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  background-color: var(--color-white);
+  cursor: pointer;
+}
+
+.notification-bell-button:hover {
+  border-color: var(--accent-coral);
+}
+
+.notification-bell-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 111, 97, 0.2);
+}
+
+.notification-bell-icon {
+  font-size: 17px;
+}
+
+.notification-bell-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  padding: 0 6px;
+  background-color: #111111;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(380px, calc(100vw - 40px));
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background-color: var(--color-white);
+  box-shadow: 0 18px 40px rgba(17, 17, 17, 0.12);
+  z-index: 20;
+  overflow: hidden;
+}
+
+.notification-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.notification-menu-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.notification-menu-clear {
+  border: none;
+  background: transparent;
+  color: var(--accent-coral);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notification-menu-state {
+  margin: 0;
+  padding: 14px;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.notification-menu-error {
+  color: #8f2f24;
+  background-color: #fff5f3;
+}
+
+.notification-menu-list {
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.notification-menu-item {
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+.notification-menu-item:last-child {
+  margin-bottom: 0;
+}
+
+.notification-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.notification-type {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #f4f4f4;
+  color: #303030;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.notification-remove {
+  border: none;
+  background: transparent;
+  color: #7a7a7a;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.notification-remove:hover {
+  color: var(--accent-coral);
+}
+
+.notification-title {
+  margin: 8px 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-black);
+}
+
+.notification-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 11px;
+  color: var(--color-muted);
+}
+
+/* User icon fallback */
+.user-icon {
+  font-size: 16px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 1024px) {
   .search-bar {
-    width: 200px;
+    width: 220px;
   }
   
   .user-name {
@@ -249,11 +417,14 @@
 @media (max-width: 768px) {
   .header {
     padding: 12px 16px;
+    flex-direction: column;
+    align-items: stretch;
     flex-wrap: wrap;
   }
   
   .header-left {
     flex: 1;
+    width: 100%;
   }
   
   .repo-dropdown,
@@ -261,8 +432,16 @@
     padding: 6px 12px;
   }
   
+  .header-right {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+  
   .search-bar {
-    width: 150px;
+    flex: 1;
+    width: auto;
+    min-width: 140px;
   }
   
   .dropdown-menu {
@@ -288,9 +467,8 @@
   .dropdown-overlay {
     background-color: rgba(0, 0, 0, 0.5);
   }
-}
-
-/* Keep original user-icon style as fallback if needed */
-.user-icon {
-  font-size: 16px;
+  
+  .notification-menu {
+    right: -44px;
+  }
 }

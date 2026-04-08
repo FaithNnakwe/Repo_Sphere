@@ -34,14 +34,18 @@ export const Appearance = () => {
     const [savedFontSize, setSavedFontSize] = useState<number>(DEFAULT_FONT_SIZE);
 
     useEffect(() => {
-        const script = document.createElement('script');
-        script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
-        script.async = true;
-        document.body.appendChild(script);
+        if (!(window as any).googleTranslateElementInit) {
+            (window as any).googleTranslateElementInit = function () {
+                new (window as any).google.translate.TranslateElement({ pageLanguage: 'en' }, 'google_translate_element');
+            };
+        }
 
-        (window as any).googleTranslateElementInit = function() {
-            new (window as any).google.translate.TranslateElement({ pageLanguage: 'en' }, 'google_translate_element');
-        };
+        if (!document.querySelector('script[src*="translate.google.com"]')) {
+            const script = document.createElement('script');
+            script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+            script.async = true;
+            document.body.appendChild(script);
+        }
     }, []);
 
     useEffect(() => {
@@ -116,50 +120,59 @@ export const Appearance = () => {
     };
 
     return (
-        <div className="Appearance-content">
-            <div className="section-intro">
+        <div className="section-intro">
+            <div className="intro-text">
                 <h2>Appearance</h2>
                 <p>Customize how RepoSphere looks on your device.</p>
             </div>
 
-            <div className="theme-form-row">
-                <h3>Theme</h3>
-                <p>Choose between light, dark, or system default themes.</p>
-                <div className="Theme-inputs">
-                    <select value={theme} onChange={(e) => setTheme(e.target.value as ThemeOption)}>
-                        <option value="light">Light Mode</option>
-                        <option value="dark">Dark Mode</option>
-                        <option value="system">System Default</option>
-                    </select>
+            <div className="Personal-contents">
+                <div className="form-row">
+                    <h2>Theme</h2>
+                    <p>Choose between light, dark, or system default themes.</p>
+                    <div className="Theme-inputs">
+                        <select value={theme} onChange={(e) => setTheme(e.target.value as ThemeOption)}>
+                            <option value="light">Light Mode</option>
+                            <option value="dark">Dark Mode</option>
+                            <option value="system">System Default</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            <div className="font-size-row">
-                <h3>Font Size</h3>
-                <p>Adjust the font size for better readability ({fontSize}px).</p>
-                <input
-                    type="range"
-                    min={12}
-                    max={32}
-                    step={1}
-                    value={fontSize}
-                    onChange={(e) => setFontSize(Number(e.target.value))}
-                    style={{ width: '100%', height: '18px' }}
-                />
-            </div>
-
-            <div className="form-row">
-                <h3>Language</h3>
-                <div className="Language-row">
-                    <p>Choose your default language</p>
+            <div className="Personal-contents-bio">
+                <div className="form-row font-size-row">
+                    <h2>Font Size</h2>
+                    <p>Adjust the font size for better readability ({fontSize}px).</p>
+                    <input
+                        type="range"
+                        min={12}
+                        max={32}
+                        step={1}
+                        value={fontSize}
+                        onChange={(e) => setFontSize(Number(e.target.value))}
+                    />
                 </div>
-
-                <div id="google_translate_element"></div>
             </div>
 
-            <div className="button-row" style={{ marginTop: '20px', display: 'flex', gap: '8px' }}>
-                <button className="btn-spacing" onClick={handleCancel}>Cancel</button>
-                <button className="btn-spacing" onClick={handleSave}>Save Changes</button>
+            <div className="Personal-contents-role">
+                <div className="form-row">
+                    <h2>Language</h2>
+                    <p>Choose your default language.</p>
+                    <div id="google_translate_element"></div>
+                </div>
+            </div>
+
+            <div className="intro-actions">
+                <button
+                    className="btn-spacing"
+                    onClick={handleCancel}
+                >
+                    Cancel
+                </button>
+                <button className="btn-spacing" onClick={handleSave}>
+                    Save Changes
+                </button>
             </div>
         </div>
     );

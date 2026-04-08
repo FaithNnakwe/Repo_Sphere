@@ -1,31 +1,42 @@
+// Sidebar.tsx
+import { Link, useLocation } from "react-router-dom";
 import "./sidebar.css";
 
 interface SidebarProps {
-  activeTab?: string;
   onTabChange?: (tab: string) => void;
   onGenerateReport?: () => void;
   isGeneratingReport?: boolean;
 }
 
 const Sidebar = ({ 
-  activeTab = "Dashboard", 
   onTabChange, 
   onGenerateReport,
   isGeneratingReport = false 
 }: SidebarProps) => {
+  const location = useLocation();
+
   const menuItems = [
-    { label: "Dashboard", icon: "📊", action: "navigate" },
-    { label: "GitHub Metrics", icon: "📈", action: "navigate" },
-    { label: "Download Report", icon: "⬇️", action: "report" }, // Special action for reports
-    { label: "Settings", icon: "⚙️", action: "navigate" }
+    { label: "Dashboard", icon: "📊", path: "/" },
+    { label: "GitHub Metrics", icon: "📈", path: "/github-metrics" },
+    { label: "Download Report", icon: "⬇️", action: "report", path: "#" },
+    { label: "Settings", icon: "⚙️", path: "/settings" }
   ];
 
-  const handleItemClick = (item: typeof menuItems[0]) => {
+  const handleItemClick = (item: any) => {
     if (item.action === "report" && onGenerateReport) {
       onGenerateReport();
-    } else if (onTabChange) {
+    } else if (onTabChange && item.path !== "#") {
       onTabChange(item.label);
     }
+  };
+
+  // Check if the current path matches the item's path
+  const isActive = (item: any) => {
+    if (item.path === "#") return false;
+    if (item.path === "/") {
+      return location.pathname === "/";
+    }
+    return location.pathname === item.path;
   };
 
   return (
@@ -36,17 +47,29 @@ const Sidebar = ({
 
       <nav className="sidebar-nav">
         {menuItems.map((item, index) => (
-          <button 
-            key={index} 
-            className={`nav-item ${activeTab === item.label ? 'active' : ''} ${item.action === "report" && isGeneratingReport ? 'loading' : ''}`}
-            onClick={() => handleItemClick(item)}
-            disabled={item.action === "report" && isGeneratingReport}
-          >
-            <span className="nav-icon">{item.icon}</span>
-            <span className="nav-label">
-              {item.action === "report" && isGeneratingReport ? "Generating..." : item.label}
-            </span>
-          </button>
+          item.action === "report" ? (
+            <button 
+              key={index}
+              className={`nav-item ${isGeneratingReport ? 'loading' : ''}`}
+              onClick={() => handleItemClick(item)}
+              disabled={isGeneratingReport}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-label">
+                {isGeneratingReport ? "Generating..." : item.label}
+              </span>
+            </button>
+          ) : (
+            <Link 
+              key={index} 
+              to={item.path} 
+              className={`nav-item ${isActive(item) ? 'active' : ''}`}
+              onClick={() => handleItemClick(item)}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-label">{item.label}</span>
+            </Link>
+          )
         ))}
       </nav>
 
