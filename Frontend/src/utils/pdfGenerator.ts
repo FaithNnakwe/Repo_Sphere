@@ -107,10 +107,12 @@ export const generatePDFReport = async (
     let heightLeft = imgHeight;
     let position = 0;
 
+    // Fix: Add first page
     pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
     heightLeft -= pageHeight;
 
-    while (heightLeft >= 0) {
+    // Fix: Add additional pages while there's still content
+    while (heightLeft > 0) {
       position = heightLeft - imgHeight;
       pdf.addPage();
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
@@ -125,6 +127,11 @@ export const generatePDFReport = async (
     return true;
   } catch (error) {
     console.error('Error generating PDF:', error);
+    // Make sure to remove loading indicator on error
+    const loadingElement = document.querySelector('div[style*="Generating PDF"]');
+    if (loadingElement && loadingElement.parentNode) {
+      loadingElement.parentNode.removeChild(loadingElement);
+    }
     throw error;
   }
 };
