@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import Dashboard from "../components/Dashboard/Dashboard";
-import { getCurrentUser, logoutFromGithub, getGithubNotifications, getNotificationSettings } from "../api";
-import { generatePDFReport } from "../utils/pdfGenerator";
+import AchievementCelebration from "../components/AchievementCelebration/AchievementCelebration";
 import Settings from "./Settings/Settings";
 import Sidebar from "../components/Sidebar/Sidebar";
 import Header from "../components/Header/Header";
+import { getCurrentUser, logoutFromGithub, getGithubNotifications, getNotificationSettings } from "../api";
+import { generatePDFReport } from "../utils/pdfGenerator";
+import {
+  type DashboardNotification,
+  type NotificationSettings,
+} from "../api";
 
 // --- Interfaces ---
 interface RepoApiResponse { name: string; url: string; description: string | null; }
@@ -17,42 +23,24 @@ interface TeamContributionApiMember { login: string; displayName: string; github
 interface TeamContributionApiResponse { members: TeamContributionApiMember[]; totals: { commits: number; pullRequests: number; issues: number; }; }
 interface TeamMemberViewModel { name: string; commits: number; pullRequests: number; issues: number; percentage: number; }
 interface UserInfo { displayName: string; githubUser: string; avatarUrl: string; isLoggedIn: boolean; }
-interface GitHubNotification {
-  id: string;
-  reason: string;
-  subject: {
-    title: string;
-    type: string;
-    url: string | null;
-  };
-  repository: {
-    full_name: string;
-    html_url: string;
-  };
-  updated_at: string;
-  url: string;
-}
-interface NotificationSettings {
-  commits: boolean;
-  comments: boolean;
-  codeReviews: boolean;
-  issues: boolean;
-  merge: boolean;
-  pullRequests: boolean;
-  inApp: boolean;
-}
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 const DASHBOARD_NOTIFICATIONS_KEY = "dashboardNotifications";
 const DASHBOARD_DISMISSED_NOTIFICATIONS_KEY = "dashboardDismissedNotifications";
+const DASHBOARD_UNLOCKED_ACHIEVEMENTS_KEY = "dashboardUnlockedAchievements";
+const ACHIEVEMENT_MILESTONES = [1, 25, 100, 250, 500, 1000, 2500, 5000];
 
-const defaultNotificationSettings: Pick<NotificationSettings, "commits" | "comments" | "codeReviews" | "issues" | "merge" | "pullRequests" | "inApp"> = {
+const defaultNotificationSettings: Pick<
+  NotificationSettings,
+  "commits" | "comments" | "codeReviews" | "issues" | "merge" | "pullRequests" | "achievements" | "inApp"
+> = {
   commits: true,
   comments: true,
   codeReviews: true,
   issues: true,
   merge: true,
   pullRequests: true,
+  achievements: true,
   inApp: true,
 };
 
@@ -77,16 +65,42 @@ const DashboardPage = () => {
   const [commitCount, setCommitCount] = useState<number>(0);
   const [pullRequestCount, setPullRequestCount] = useState<number>(0);
   const [issueCount, setIssueCount] = useState<number>(0);
+  const [currentUserCommits, setCurrentUserCommits] = useState<number>(0);
+  const [currentGhUser, setCurrentGhUser] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("Dashboard");
 
   // --- Notification State ---
-  const [notifications, setNotifications] = useState<GitHubNotification[]>([]);
+  const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
   const [dismissedNotificationIds, setDismissedNotificationIds] = useState<string[]>([]);
+  const [unlockedMilestones, setUnlockedMilestones] = useState<number[]>([]);
+  const [celebrationQueue, setCelebrationQueue] = useState<number[]>([]);
+  const [activeCelebrationMilestone, setActiveCelebrationMilestone] = useState<number | null>(null);
   const [notificationsLoading, setNotificationsLoading] = useState<boolean>(false);
   const [notificationsError, setNotificationsError] = useState<string>("");
+  const [notificationSettings, setNotificationSettings] =
+    useState<typeof defaultNotificationSettings>(defaultNotificationSettings);
+
+  const unlockedMilestonesStorageKey = useMemo(
+    () => `${DASHBOARD_UNLOCKED_ACHIEVEMENTS_KEY}:${currentGhUser || "guest"}`,
+    [currentGhUser]
+  );
+
+  // --- Load Current User ---
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      try {
+        const auth = await getCurrentUser();
+        setCurrentGhUser(auth.ghUser ?? "");
+      } catch {
+        setCurrentGhUser("");
+      }
+    };
+
+    void loadCurrentUser();
+  }, []);
 
   // --- Load User ---
   useEffect(() => {
@@ -133,14 +147,19 @@ const DashboardPage = () => {
   // --- Load Repository Metrics ---
   useEffect(() => {
     if (!selectedRepository) {
-      setCommits([]); setLanguages([]); setTeamMembers([]);
-      setCommitCount(0); setPullRequestCount(0); setIssueCount(0);
+      setCommits([]);
+      setLanguages([]);
+      setTeamMembers([]);
+      setCommitCount(0);
+      setPullRequestCount(0);
+      setIssueCount(0);
+      setCurrentUserCommits(0);
       return;
     }
     const [owner, repo] = selectedRepository.split("/");
     if (!owner || !repo) return;
 
-    const loadMetrics = async () => {
+    const loadRepositoryMetrics = async () => {
       setIsLoading(true); setErrorMessage("");
       try {
         const [commitsRes, pullsRes, languagesRes, teamRes] = await Promise.all([
@@ -170,6 +189,21 @@ const DashboardPage = () => {
           setCommitCount(teamData.totals.commits);
           setPullRequestCount(teamData.totals.pullRequests);
           setIssueCount(teamData.totals.issues);
+
+          if (currentGhUser) {
+            const matchedMember = teamData.members.find(
+              (member) => member.login.toLowerCase() === currentGhUser.toLowerCase()
+            );
+            setCurrentUserCommits(matchedMember?.commits ?? 0);
+          } else {
+            setCurrentUserCommits(0);
+          }
+        } else {
+          setTeamMembers([]);
+          setCommitCount(commitsData.length);
+          setPullRequestCount(pullsData.length);
+          setIssueCount(0);
+          setCurrentUserCommits(0);
         }
 
         if (languagesRes.ok) {
@@ -179,33 +213,143 @@ const DashboardPage = () => {
             name, percentage: total > 0 ? Math.round((bytes / total) * 100) : 0
           })).sort((a,b) => b.percentage - a.percentage).slice(0,5));
         }
-
-      } catch { setErrorMessage("Failed to load repository metrics"); }
-      finally { setIsLoading(false); }
+      } catch {
+        setCommits([]);
+        setLanguages([]);
+        setTeamMembers([]);
+        setCommitCount(0);
+        setPullRequestCount(0);
+        setIssueCount(0);
+        setCurrentUserCommits(0);
+        setErrorMessage("Could not load repository metrics from backend.");
+      } finally {
+        setIsLoading(false);
+      }
     };
-    void loadMetrics();
-  }, [selectedRepository]);
 
-  // --- Notifications ---
+    void loadRepositoryMetrics();
+  }, [selectedRepository, currentGhUser]);
+
+  // --- Achievement Notifications ---
+  useEffect(() => {
+    if (!notificationSettings.inApp || !notificationSettings.achievements) {
+      return;
+    }
+
+    const newlyUnlocked = ACHIEVEMENT_MILESTONES.filter(
+      (milestone) => currentUserCommits >= milestone && !unlockedMilestones.includes(milestone)
+    );
+
+    if (newlyUnlocked.length === 0) {
+      return;
+    }
+
+    const now = new Date().toISOString();
+
+    setUnlockedMilestones((currentMilestones) => [
+      ...currentMilestones,
+      ...newlyUnlocked.filter((milestone) => !currentMilestones.includes(milestone)),
+    ]);
+
+    const achievementNotifications: DashboardNotification[] = newlyUnlocked.map((milestone) => ({
+      id: `achievement-${milestone}`,
+      notificationType: "achievement",
+      achievementMilestone: milestone,
+      reason: "achievement",
+      subject: {
+        title: `Milestone unlocked: ${milestone} contributions!`,
+        type: "Achievement",
+        url: null,
+      },
+      repository: {
+        full_name: selectedRepository || "GitHub Contributions",
+        html_url: "",
+      },
+      updated_at: now,
+      url: "",
+    }));
+
+    newlyUnlocked.forEach((milestone) => {
+      toast.success(`Achievement unlocked: ${milestone} contributions!`, {
+        autoClose: 4000,
+      });
+    });
+
+    setCelebrationQueue((currentQueue) => [...currentQueue, ...newlyUnlocked]);
+
+    setNotifications((currentNotifications) => {
+      const nextNotifications = new Map<string, DashboardNotification>();
+
+      currentNotifications.forEach((notification) => {
+        if (!dismissedNotificationIds.includes(notification.id)) {
+          nextNotifications.set(notification.id, notification);
+        }
+      });
+
+      achievementNotifications.forEach((notification) => {
+        if (!dismissedNotificationIds.includes(notification.id)) {
+          nextNotifications.set(notification.id, notification);
+        }
+      });
+
+      return Array.from(nextNotifications.values()).sort(
+        (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      );
+    });
+  }, [
+    currentUserCommits,
+    dismissedNotificationIds,
+    notificationSettings.achievements,
+    notificationSettings.inApp,
+    selectedRepository,
+    unlockedMilestones,
+  ]);
+
+  // --- Celebration Queue ---
+  useEffect(() => {
+    if (activeCelebrationMilestone !== null || celebrationQueue.length === 0) {
+      return;
+    }
+
+    const [nextMilestone, ...remainingQueue] = celebrationQueue;
+    setActiveCelebrationMilestone(nextMilestone);
+    setCelebrationQueue(remainingQueue);
+  }, [activeCelebrationMilestone, celebrationQueue]);
+
+  // --- Load Stored Notifications ---
   useEffect(() => {
     const stored = localStorage.getItem(DASHBOARD_NOTIFICATIONS_KEY);
-    if (stored) setNotifications(JSON.parse(stored));
+    if (stored) {
+      try {
+        setNotifications(JSON.parse(stored) as DashboardNotification[]);
+      } catch {
+        setNotifications([]);
+      }
+    }
     const dismissed = localStorage.getItem(DASHBOARD_DISMISSED_NOTIFICATIONS_KEY);
     if (dismissed) setDismissedNotificationIds(JSON.parse(dismissed));
   }, []);
 
+  // --- Store Notifications ---
   useEffect(() => { localStorage.setItem(DASHBOARD_NOTIFICATIONS_KEY, JSON.stringify(notifications)); }, [notifications]);
   useEffect(() => { localStorage.setItem(DASHBOARD_DISMISSED_NOTIFICATIONS_KEY, JSON.stringify(dismissedNotificationIds)); }, [dismissedNotificationIds]);
+  useEffect(() => { localStorage.setItem(unlockedMilestonesStorageKey, JSON.stringify(unlockedMilestones)); }, [unlockedMilestones, unlockedMilestonesStorageKey]);
 
+  // --- Load GitHub Notifications ---
   useEffect(() => {
     const loadNotifications = async () => {
       setNotificationsLoading(true); setNotificationsError("");
       try {
         const settings = await getNotificationSettings();
         const resolvedSettings = { ...defaultNotificationSettings, ...settings };
-        if (!resolvedSettings.inApp) return;
+        setNotificationSettings(resolvedSettings);
 
-        // Fix: Extract only the needed preferences for the API call
+        if (!resolvedSettings.inApp) {
+          setNotificationsLoading(false);
+          return;
+        }
+
+        // Extract only the needed preferences for the API call
         const notificationPrefs = {
           commits: resolvedSettings.commits,
           comments: resolvedSettings.comments,
@@ -217,7 +361,7 @@ const DashboardPage = () => {
 
         const fetched = await getGithubNotifications(notificationPrefs);
         
-        // Fix: Properly handle the fetched notifications
+        // Properly handle the fetched notifications
         const filteredNotifications = fetched.filter(n => !dismissedNotificationIds.includes(n.id));
         
         // Merge existing and new notifications, removing duplicates by id
@@ -232,8 +376,9 @@ const DashboardPage = () => {
       } finally { setNotificationsLoading(false); }
     };
     void loadNotifications();
-  }, [dismissedNotificationIds]); // Removed notifications from dependencies to avoid infinite loop
+  }, [dismissedNotificationIds]);
 
+  // --- Notification Handlers ---
   const handleRemoveNotification = (id: string) => {
     setDismissedNotificationIds(curr => [...curr, id]);
     setNotifications(curr => curr.filter(n => n.id !== id));
@@ -253,6 +398,23 @@ const DashboardPage = () => {
   const handleChangeDisplayName = () => { localStorage.removeItem("displayName"); navigate("/setup-profile"); };
   const handleTabChange = (tab: string) => setActiveTab(tab);
 
+  const handleGenerateReport = async () => {
+    if (!selectedRepository) return setErrorMessage("Please select a repository first");
+    setIsGeneratingReport(true); setErrorMessage("");
+    try {
+      const stats = [
+        { icon: "📊", label: "Total Number of Commits", value: commitCount },
+        { icon: "🔀", label: "Total Pull Requests", value: pullRequestCount },
+        { icon: "⚠️", label: "Issues Opened", value: issueCount },
+        { icon: "📝", label: "# Lines of Code", value: "N/A" },
+      ];
+      const latestCommitMessage = commits[0]?.message || "No commits available";
+      const reportData = { repository: selectedRepository, date: new Date().toLocaleString(), stats, teamMembers, languages, commitCount, pullRequestCount, latestCommitMessage };
+      await generatePDFReport("report-content", reportData);
+    } catch { setErrorMessage("Failed to generate PDF report"); }
+    finally { setIsGeneratingReport(false); }
+  };
+
   const stats = useMemo(() => [
     { icon: "📊", label: "Total Number of Commits", value: commitCount },
     { icon: "🔀", label: "Total Pull Requests", value: pullRequestCount },
@@ -268,16 +430,6 @@ const DashboardPage = () => {
   }, [errorMessage, isLoading, teamMembers]);
 
   const latestCommitMessage = commits[0]?.message || "No commits available";
-
-  const handleGenerateReport = async () => {
-    if (!selectedRepository) return setErrorMessage("Please select a repository first");
-    setIsGeneratingReport(true); setErrorMessage("");
-    try {
-      const reportData = { repository: selectedRepository, date: new Date().toLocaleString(), stats, teamMembers, languages, commitCount, pullRequestCount, latestCommitMessage };
-      await generatePDFReport("report-content", reportData);
-    } catch { setErrorMessage("Failed to generate PDF report"); }
-    finally { setIsGeneratingReport(false); }
-  };
 
   // --- Render ---
   const renderContent = () => {
@@ -307,32 +459,40 @@ const DashboardPage = () => {
         );
       default:
         return (
-          <Dashboard
-            userInfo={userInfo}
-            onLogout={handleLogout}
-            onChangeDisplayName={handleChangeDisplayName}
-            onGenerateReport={handleGenerateReport}
-            isGeneratingReport={isGeneratingReport}
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            repositories={repositories.map(r=>r.fullName)}
-            selectedRepository={selectedRepository}
-            onRepositoryChange={setSelectedRepository}
-            stats={stats}
-            alertMessage={alertMessage}
-            alertIcon={errorMessage ? "⚠️" : "⭐"}
-            isLoading={isLoading}
-            teamMembers={teamMembers}
-            commitCount={commitCount}
-            pullRequestCount={pullRequestCount}
-            latestCommitMessage={latestCommitMessage}
-            languages={languages}
-            notifications={notifications}
-            notificationsLoading={notificationsLoading}
-            notificationsError={notificationsError}
-            onRemoveNotification={handleRemoveNotification}
-            onClearNotifications={handleClearNotifications}
-          />
+          <>
+            <Dashboard
+              userInfo={userInfo}
+              onLogout={handleLogout}
+              onChangeDisplayName={handleChangeDisplayName}
+              onGenerateReport={handleGenerateReport}
+              isGeneratingReport={isGeneratingReport}
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              repositories={repositories.map(r=>r.fullName)}
+              selectedRepository={selectedRepository}
+              onRepositoryChange={setSelectedRepository}
+              stats={stats}
+              alertMessage={alertMessage}
+              alertIcon={errorMessage ? "⚠️" : "⭐"}
+              isLoading={isLoading}
+              teamMembers={teamMembers}
+              commitCount={commitCount}
+              pullRequestCount={pullRequestCount}
+              latestCommitMessage={latestCommitMessage}
+              languages={languages}
+              notifications={notifications}
+              notificationsLoading={notificationsLoading}
+              notificationsError={notificationsError}
+              onRemoveNotification={handleRemoveNotification}
+              onClearNotifications={handleClearNotifications}
+            />
+            {activeCelebrationMilestone !== null && (
+              <AchievementCelebration
+                milestone={activeCelebrationMilestone}
+                onComplete={() => setActiveCelebrationMilestone(null)}
+              />
+            )}
+          </>
         );
     }
   };

@@ -7,7 +7,7 @@ import StatsGrid from "../Cards/StatsGrid";
 import MetricsChart from "../Charts/MetricsChart";
 import TeamContribution from "../TeamContribution/TeamContribution";
 import LanguagesChart from "../Charts/LanguagesChart";
-import type { GitHubNotification } from "../../api";
+import type { DashboardNotification } from "../../api";
 import { useLocation } from "react-router-dom";
 
 interface DashboardProps {
@@ -36,7 +36,7 @@ interface DashboardProps {
     name: string;
     percentage: number;
   }>;
-  notifications?: GitHubNotification[];
+  notifications?: DashboardNotification[];
   notificationsLoading?: boolean;
   notificationsError?: string;
   onRemoveNotification?: (id: string) => void;

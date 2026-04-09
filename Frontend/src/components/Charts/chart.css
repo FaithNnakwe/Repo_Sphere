@@ -11,7 +11,7 @@
 
 .chart-title {
   margin: 0 0 20px 0;
-  font-size: 16px;
+  font-size: 1.0625rem;
   font-weight: 600;
   color: var(--color-black);
 }
@@ -27,7 +27,7 @@
   align-items: center;
   justify-content: center;
   color: var(--color-muted);
-  font-size: 14px;
+  font-size: 0.9375rem;
 }
 
 .chart-placeholder p {

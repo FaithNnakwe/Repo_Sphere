@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./header.css";
-import type { GitHubNotification } from "../../api";
+import type { DashboardNotification } from "../../api";
 
 interface HeaderProps {
   repositories: string[];
@@ -14,7 +14,7 @@ interface HeaderProps {
   };
   onLogout: () => void;
   onChangeDisplayName: () => void;
-  notifications: GitHubNotification[];
+  notifications: DashboardNotification[];
   notificationsLoading: boolean;
   notificationsError: string;
   onRemoveNotification: (id: string) => void;
@@ -150,7 +150,17 @@ const Header = ({
                   {notifications.map((notification) => (
                     <li key={notification.id} className="notification-menu-item">
                       <div className="notification-item-top">
-                        <span className="notification-type">{notification.subject.type}</span>
+                        <span
+                          className={`notification-type ${
+                            notification.notificationType === "achievement"
+                              ? "notification-type-achievement"
+                              : ""
+                          }`}
+                        >
+                          {notification.notificationType === "achievement"
+                            ? "Achievement"
+                            : notification.subject.type}
+                        </span>
                         <button
                           type="button"
                           className="notification-remove"
@@ -162,7 +172,15 @@ const Header = ({
                       </div>
                       <p className="notification-title">{notification.subject.title}</p>
                       <div className="notification-meta">
-                        <span>{notification.repository.full_name}</span>
+                        <span>
+                          {notification.notificationType === "achievement"
+                            ? `Contribution milestone${
+                                notification.achievementMilestone
+                                  ? `: ${notification.achievementMilestone}`
+                                  : ""
+                              }`
+                            : notification.repository.full_name}
+                        </span>
                         <span>{formatNotificationTime(notification.updated_at)}</span>
                       </div>
                     </li>

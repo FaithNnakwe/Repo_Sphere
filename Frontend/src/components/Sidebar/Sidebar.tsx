@@ -16,10 +16,10 @@ const Sidebar = ({
   const location = useLocation();
 
   const menuItems = [
-    { label: "Dashboard", icon: "📊", path: "/" },
-    { label: "GitHub Metrics", icon: "📈", path: "/github-metrics" },
-    { label: "Download Report", icon: "⬇️", action: "report", path: "#" },
-    { label: "Settings", icon: "⚙️", path: "/settings" }
+    { label: "Dashboard", icon: "📊", path: "/", accentClass: "nav-item-dashboard" },
+    { label: "GitHub Metrics", icon: "📈", path: "/github-metrics", accentClass: "nav-item-metrics" },
+    { label: "Download Report", icon: "⬇️", action: "report", path: "#", accentClass: "nav-item-reports" },
+    { label: "Settings", icon: "⚙️", path: "/settings", accentClass: "nav-item-settings" }
   ];
 
   const handleItemClick = (item: any) => {
@@ -50,11 +50,12 @@ const Sidebar = ({
           item.action === "report" ? (
             <button 
               key={index}
-              className={`nav-item ${isGeneratingReport ? 'loading' : ''}`}
+              className={`nav-item ${item.accentClass} ${isGeneratingReport ? 'loading' : ''}`}
               onClick={() => handleItemClick(item)}
               disabled={isGeneratingReport}
+              aria-label="Generate report"
             >
-              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
               <span className="nav-label">
                 {isGeneratingReport ? "Generating..." : item.label}
               </span>
@@ -63,11 +64,13 @@ const Sidebar = ({
             <Link 
               key={index} 
               to={item.path} 
-              className={`nav-item ${isActive(item) ? 'active' : ''}`}
+              className={`nav-item ${item.accentClass} ${isActive(item) ? 'active' : ''}`}
               onClick={() => handleItemClick(item)}
+              aria-label={`Go to ${item.label}`}
             >
-              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
               <span className="nav-label">{item.label}</span>
+              {isActive(item) && <span className="nav-active-indicator" aria-hidden="true" />}
             </Link>
           )
         ))}
