@@ -1,22 +1,23 @@
 .setup-container{
   height:100vh;
-  background:#FFA552;
+  background:var(--color-body-bg);
   display:flex;
   justify-content:center;
   align-items:center;
   font-family:"Segoe UI", sans-serif;
-  color:white;
+  color:var(--color-text-strong);
 }
 
 /* card */
 
 .setup-card{
-  background:#111;
+  background:var(--color-surface);
   padding:45px;
   width:350px;
   border-radius:14px;
   text-align:center;
-  box-shadow:0 10px 25px rgba(0,0,0,0.4);
+  border:1px solid var(--color-line);
+  box-shadow:0 10px 25px var(--color-shadow-strong);
 }
 
 /* title */
@@ -29,7 +30,7 @@
 /* subtitle */
 
 .setup-subtitle{
-  color:#aaa;
+  color:var(--color-text-subtle);
   margin-bottom:30px;
 }
 
@@ -40,9 +41,9 @@
   padding:12px;
   margin-bottom:20px;
   border-radius:8px;
-  border:2px solid #333;
-  background:#000;
-  color:white;
+  border:2px solid var(--color-input-border);
+  background:var(--color-input-bg);
+  color:var(--color-input-text);
   font-size:16px;
   outline:none;
 }

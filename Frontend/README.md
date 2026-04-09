@@ -1,5 +1,35 @@
 # React + TypeScript + Vite
 
+## Team Local Setup (RepoSphere)
+
+### 1) Frontend environment
+
+- Copy `.env.example` to `.env`.
+- Set `VITE_API_BASE_URL` to your backend base URL (example: `${API_BASE}
+`).
+- If left empty, frontend will use Vite proxy rules in `vite.config.ts`.
+
+### 2) Run backend
+
+- Start the backend service that exposes these routes:
+  - `/api/repos`
+  - `/api/repos/:owner/:repo/commits`
+  - `/api/repos/:owner/:repo/pulls`
+  - `/api/repos/:owner/:repo/languages` (optional in UI)
+
+### 3) Run frontend
+
+- Install dependencies: `npm install`
+- Start dev server: `npm run dev`
+- Open app at `http://localhost:5173`
+
+### 4) Team verification checklist
+
+- Two teammates select the same repository in the dashboard.
+- Confirm both see the same commit and PR counts.
+- Confirm team contribution percentages match for the same repository.
+- If data differs, verify both teammates point to the same backend URL in `.env`.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

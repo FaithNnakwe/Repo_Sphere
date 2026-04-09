@@ -1,0 +1,161 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --color-black: #111111;
+  --color-white: #ffffff;
+  --color-muted: #5f5f5f;
+  --color-line: #e7e7e7;
+  --accent-coral: #FF6F61;
+  --accent-yellow: #FFD95F;
+  --accent-orange: #FFA552;
+  --color-body-bg: #ffffff;
+  --color-page-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;
+  --color-surface-soft: #fcfcfd;
+  --color-text-strong: #101828;
+  --color-text-body: #344054;
+  --color-text-subtle: #667085;
+  --color-input-bg: #ffffff;
+  --color-input-border: #d0d5dd;
+  --color-input-text: #101828;
+  --color-shadow-soft: rgba(16, 24, 40, 0.06);
+  --color-shadow-strong: rgba(17, 17, 17, 0.12);
+  --color-sidebar-bg: linear-gradient(180deg, #111111 0%, #171717 100%);
+  --color-sidebar-border: rgba(255, 255, 255, 0.1);
+  --color-sidebar-text: rgba(255, 255, 255, 0.88);
+  --color-sidebar-muted: rgba(255, 255, 255, 0.6);
+  --color-sidebar-hover: rgba(255, 255, 255, 0.08);
+  --color-sidebar-active: linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.08) 100%);
+  --color-sidebar-focus: rgba(255, 255, 255, 0.12);
+  --color-badge-bg: #f4f4f4;
+  --color-badge-text: #303030;
+  --color-badge-achievement-bg: #fff3d9;
+  --color-badge-achievement-text: #8b5b00;
+  --color-danger-bg: #fff5f3;
+  --color-danger-border: #ffd4cf;
+  --color-danger-text: #8f2f24;
+  --color-progress-bg: #f3f3f3;
+  --color-hero-panel: #ffa552;
+  --color-hero-text: #111111;
+  --color-hero-subtle: rgba(255, 255, 255, 0.92);
+  --app-base-font-size: 17px;
+  --app-font-scale: 1.0625;
+  --app-reading-line-height: 1.6;
+}
+
+:root[data-theme='dark'] {
+  --color-black: #f3f6fb;
+  --color-white: #121821;
+  --color-muted: #9aa8bc;
+  --color-line: #283345;
+  --color-body-bg: #0b1220;
+  --color-page-bg: #0f172a;
+  --color-surface: #121821;
+  --color-surface-muted: #172133;
+  --color-surface-soft: #162032;
+  --color-text-strong: #f3f6fb;
+  --color-text-body: #d6deea;
+  --color-text-subtle: #9aa8bc;
+  --color-input-bg: #0f172a;
+  --color-input-border: #324055;
+  --color-input-text: #f3f6fb;
+  --color-shadow-soft: rgba(0, 0, 0, 0.32);
+  --color-shadow-strong: rgba(0, 0, 0, 0.35);
+  --color-sidebar-bg: linear-gradient(180deg, #0a0f18 0%, #111827 100%);
+  --color-sidebar-border: rgba(255, 255, 255, 0.08);
+  --color-sidebar-text: rgba(243, 246, 251, 0.92);
+  --color-sidebar-muted: rgba(243, 246, 251, 0.62);
+  --color-sidebar-hover: rgba(255, 255, 255, 0.06);
+  --color-sidebar-active: linear-gradient(90deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.05) 100%);
+  --color-sidebar-focus: rgba(255, 255, 255, 0.1);
+  --color-badge-bg: #223047;
+  --color-badge-text: #dbe6f5;
+  --color-badge-achievement-bg: #47391b;
+  --color-badge-achievement-text: #ffd98a;
+  --color-danger-bg: #3b1f25;
+  --color-danger-border: #6d2e3c;
+  --color-danger-text: #ffb9c3;
+  --color-progress-bg: #243145;
+  --color-hero-panel: linear-gradient(180deg, #1f2a3d 0%, #182232 100%);
+  --color-hero-text: #f3f6fb;
+  --color-hero-subtle: #c5d0df;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-body-bg);
+  color: var(--color-black);
+}
+
+html {
+  font-size: var(--app-base-font-size);
+}
+
+body {
+  font-size: 1rem;
+  line-height: var(--app-reading-line-height);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+p,
+li,
+label,
+input,
+textarea,
+select,
+button {
+  line-height: 1.5;
+}
+
+#root {
+  height: 100%;
+}
+
+.App {
+  height: 100%;
+}
+
+main {
+  height: 100%;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-coral);
+}

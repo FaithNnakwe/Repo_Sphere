@@ -1,0 +1,124 @@
+.achievement-celebration {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.achievement-celebration::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.18), rgba(17, 17, 17, 0.08));
+  animation: celebration-fade 2.6s ease-out forwards;
+}
+
+.achievement-celebration-card {
+  position: relative;
+  width: min(560px, calc(100vw - 32px));
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: linear-gradient(135deg, rgba(255, 111, 97, 0.95), rgba(255, 179, 71, 0.95));
+  box-shadow: 0 24px 44px rgba(17, 17, 17, 0.35);
+  color: #ffffff;
+  text-align: center;
+  padding: 22px 24px;
+  animation: celebration-pop 2.6s ease-out forwards;
+}
+
+.achievement-celebration-kicker {
+  margin: 0 0 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+  opacity: 0.92;
+}
+
+.achievement-celebration-card h2 {
+  margin: 0;
+  font-size: clamp(30px, 6vw, 52px);
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.achievement-celebration-copy {
+  margin: 12px 0 0;
+  font-size: 15px;
+  font-weight: 500;
+  opacity: 0.96;
+}
+
+.achievement-confetti {
+  position: absolute;
+  inset: 0;
+}
+
+.achievement-confetti-piece {
+  position: absolute;
+  top: -14%;
+  width: 11px;
+  height: 18px;
+  border-radius: 2px;
+  opacity: 0;
+  transform: translate3d(0, 0, 0) rotate(0deg);
+  animation-name: confetti-fall;
+  animation-timing-function: cubic-bezier(0.21, 0.65, 0.32, 1);
+  animation-fill-mode: forwards;
+}
+
+@keyframes celebration-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.72) translateY(30px);
+  }
+
+  12% {
+    opacity: 1;
+    transform: scale(1.06) translateY(0);
+  }
+
+  75% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(0.95) translateY(-8px);
+  }
+}
+
+@keyframes celebration-fade {
+  0% {
+    opacity: 0;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  8% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 115vh, 0) rotate(780deg);
+  }
+}
