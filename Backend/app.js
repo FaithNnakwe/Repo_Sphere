@@ -33,7 +33,7 @@ app.get('/auth/github', (req, res) => {
   const params = new URLSearchParams({
     client_id: process.env.GITHUB_CLIENT_ID,
     redirect_uri: process.env.GITHUB_CALLBACK_URL,
-    scope: 'user repo',
+    scope: 'read:user user:email public_repo',
     prompt: 'consent',
     state,
   });
