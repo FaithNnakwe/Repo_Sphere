@@ -9,6 +9,7 @@ import './SettingIndex.css';
 function Settings() {
     const [activeTab, setActiveTab] = useState('account');
     const [searchTerm, setSearchTerm] = useState('');
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // ADD THIS
 
     const tabItems = [
         { key: 'account', label: 'Account', terms: ['account', 'username', 'bio', 'profile'] },
@@ -34,6 +35,10 @@ function Settings() {
         }
     }, [filteredTabs]);
 
+    const handleSidebarToggle = () => { // ADD THIS
+        setIsSidebarCollapsed(!isSidebarCollapsed);
+    };
+
     const renderTabContent = () => {
         switch (activeTab) {
             case 'account': return <Account />;
@@ -46,9 +51,12 @@ function Settings() {
 
     return (
         <div className="settings-page-layout">
-            <Sidebar />
+            <Sidebar 
+                isCollapsed={isSidebarCollapsed} // ADD THIS
+                onToggleCollapse={handleSidebarToggle} // ADD THIS
+            />
 
-            <main className="settings-main">
+            <main className={`settings-main ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}> {/* MODIFY THIS LINE */}
                 <div className="Settings">
                     {/* Top Row: Title and Search Bar */}
                     <div className="settings-header-top">
