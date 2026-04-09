@@ -1,4 +1,3 @@
-// Sidebar.tsx
 import { Link, useLocation } from "react-router-dom";
 import "./sidebar.css";
 
@@ -6,14 +5,24 @@ interface SidebarProps {
   onTabChange?: (tab: string) => void;
   onGenerateReport?: () => void;
   isGeneratingReport?: boolean;
+  isCollapsed?: boolean;  // ADD THIS LINE
+  onToggleCollapse?: () => void;  // ADD THIS LINE
 }
 
 const Sidebar = ({ 
   onTabChange, 
   onGenerateReport,
-  isGeneratingReport = false 
+  isGeneratingReport = false, 
+  isCollapsed = false,  // ADD THIS LINE
+  onToggleCollapse      // ADD THIS LINE
 }: SidebarProps) => {
   const location = useLocation();
+
+  const toggleSidebar = () => {
+    if (onToggleCollapse) {
+      onToggleCollapse();  // Call the parent's toggle function
+    }
+  };
 
   const menuItems = [
     { label: "Dashboard", icon: "📊", path: "/", accentClass: "nav-item-dashboard" },
@@ -40,9 +49,23 @@ const Sidebar = ({
   };
 
   return (
-    <div className="sidebar">
+    <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
+      <button 
+        className="sidebar-toggle" 
+        onClick={toggleSidebar}
+        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        {isCollapsed ? "→" : "←"}
+      </button>
+
       <div className="sidebar-header">
-        <img className="brand-image" src="/Logo.png" alt="Repo Sphere" />
+        {!isCollapsed && (
+          <img className="brand-image" src="/Logo.png" alt="Repo Sphere" />
+        )}
+        {isCollapsed && (
+          <div className="brand-icon">📊</div>
+        )}
       </div>
 
       <nav className="sidebar-nav">
@@ -53,12 +76,16 @@ const Sidebar = ({
               className={`nav-item ${item.accentClass} ${isGeneratingReport ? 'loading' : ''}`}
               onClick={() => handleItemClick(item)}
               disabled={isGeneratingReport}
-              aria-label="Generate report"
+              aria-label={isCollapsed ? item.label : "Generate report"}
+              title={isCollapsed ? item.label : ""}
             >
               <span className="nav-icon" aria-hidden="true">{item.icon}</span>
-              <span className="nav-label">
-                {isGeneratingReport ? "Generating..." : item.label}
-              </span>
+              {!isCollapsed && (
+                <span className="nav-label">
+                  {isGeneratingReport ? "Generating..." : item.label}
+                </span>
+              )}
+              {isActive(item) && <span className="nav-active-indicator" aria-hidden="true" />}
             </button>
           ) : (
             <Link 
@@ -66,19 +93,22 @@ const Sidebar = ({
               to={item.path} 
               className={`nav-item ${item.accentClass} ${isActive(item) ? 'active' : ''}`}
               onClick={() => handleItemClick(item)}
-              aria-label={`Go to ${item.label}`}
+              aria-label={isCollapsed ? item.label : `Go to ${item.label}`}
+              title={isCollapsed ? item.label : ""}
             >
               <span className="nav-icon" aria-hidden="true">{item.icon}</span>
-              <span className="nav-label">{item.label}</span>
+              {!isCollapsed && <span className="nav-label">{item.label}</span>}
               {isActive(item) && <span className="nav-active-indicator" aria-hidden="true" />}
             </Link>
           )
         ))}
       </nav>
 
-      <div className="sidebar-footer">
-        <p>v1.0.0</p>
-      </div>
+      {!isCollapsed && (
+        <div className="sidebar-footer">
+          <p>v1.0.0</p>
+        </div>
+      )}
     </div>
   );
 };

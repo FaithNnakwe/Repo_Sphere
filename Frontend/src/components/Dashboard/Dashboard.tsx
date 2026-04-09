@@ -51,7 +51,10 @@ interface DashboardProps {
   onGenerateReport?: () => void;
   isGeneratingReport?: boolean;
   onTabChange?: (tab: string) => void;
-  activeTab?: string;  // Add this line
+  activeTab?: string;
+  // ADD THESE TWO LINES:
+  isSidebarCollapsed?: boolean;
+  onSidebarToggle?: () => void;
 }
 
 const Dashboard = ({
@@ -82,6 +85,9 @@ const Dashboard = ({
   onGenerateReport = () => {},
   isGeneratingReport = false,
   onTabChange = () => {},
+  // ADD THESE TWO LINES WITH DEFAULTS:
+  isSidebarCollapsed = false,
+  onSidebarToggle = () => {},
 }: DashboardProps) => {
   const location = useLocation();
   
@@ -100,9 +106,11 @@ const Dashboard = ({
         onTabChange={onTabChange}
         onGenerateReport={onGenerateReport}
         isGeneratingReport={isGeneratingReport}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={onSidebarToggle}
       />
       
-      <div className="dashboard-main">
+      <div className={`dashboard-main ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         <Header
           repositories={repositories}
           selectedRepository={selectedRepository}

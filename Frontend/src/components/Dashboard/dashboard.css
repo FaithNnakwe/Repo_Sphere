@@ -1,6 +1,6 @@
 .dashboard-container {
   display: flex;
-  height: 100vh;
+  min-height: 100vh;
   background-color: var(--color-white);
 }
 
@@ -10,6 +10,13 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  width: calc(100% - 250px);
+}
+
+/* When sidebar is collapsed, expand the main content */
+.dashboard-main.sidebar-collapsed {
+  margin-left: 0;
+  width: 100%;
 }
 
 .dashboard-content {
@@ -17,6 +24,12 @@
   padding: 34px 36px;
   max-width: 1400px;
   width: 100%;
+  transition: padding 0.3s ease;
+}
+
+/* Adjust content padding when sidebar is collapsed */
+.dashboard-main.sidebar-collapsed .dashboard-content {
+  padding-left: 20px; /* Adjust as needed */
 }
 
 .content-header {
