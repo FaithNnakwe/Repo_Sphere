@@ -71,6 +71,7 @@ const DashboardPage = () => {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("Dashboard");
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
 
   // --- Notification State ---
   const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
@@ -398,6 +399,10 @@ const DashboardPage = () => {
   const handleChangeDisplayName = () => { localStorage.removeItem("displayName"); navigate("/setup-profile"); };
   const handleTabChange = (tab: string) => setActiveTab(tab);
 
+  const handleSidebarToggle = () => {
+  setIsSidebarCollapsed(!isSidebarCollapsed);
+};
+
   const handleGenerateReport = async () => {
     if (!selectedRepository) return setErrorMessage("Please select a repository first");
     setIsGeneratingReport(true); setErrorMessage("");
@@ -437,8 +442,14 @@ const DashboardPage = () => {
       case "Settings":
         return (
           <div className="dashboard-container">
-            <Sidebar onTabChange={handleTabChange} onGenerateReport={handleGenerateReport} isGeneratingReport={isGeneratingReport} />
-            <div className="dashboard-main">
+<Sidebar 
+  onTabChange={handleTabChange} 
+  onGenerateReport={handleGenerateReport} 
+  isGeneratingReport={isGeneratingReport}
+  isCollapsed={isSidebarCollapsed}
+  onToggleCollapse={handleSidebarToggle}
+/>
+            <div className={`dashboard-main ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
               <Header 
                 repositories={repositories.map(r=>r.fullName)} 
                 selectedRepository={selectedRepository} 
@@ -485,7 +496,10 @@ const DashboardPage = () => {
               notificationsError={notificationsError}
               onRemoveNotification={handleRemoveNotification}
               onClearNotifications={handleClearNotifications}
+              isSidebarCollapsed={isSidebarCollapsed}
+              onSidebarToggle={handleSidebarToggle}
             />
+
             {activeCelebrationMilestone !== null && (
               <AchievementCelebration
                 milestone={activeCelebrationMilestone}

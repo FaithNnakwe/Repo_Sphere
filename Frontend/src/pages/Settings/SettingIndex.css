@@ -32,6 +32,11 @@ body {
   text-align: left;
 }
 
+/* Add these lines to SettingIndex.css */
+
+.settings-main.sidebar-collapsed {
+  margin-left: 0;
+}
 .settings-page-layout {
   display: flex;
   min-height: 100vh;
@@ -42,6 +47,8 @@ body {
   margin-left: 250px;
   flex: 1;
   overflow-y: auto;
+  transition: margin-left 0.3s ease;
+  padding: 20px;
 }
 
 .tab-content {
