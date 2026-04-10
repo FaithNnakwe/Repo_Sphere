@@ -4,7 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
-// const { registerGitHubRoutes } = require('./GitHubService');
+const { registerGitHubRoutes } = require('./GitHubService');
 const { getDisplayName, setDisplayName } = require('./displayNameStore');
 
 const app = express();
@@ -24,7 +24,7 @@ app.get('/api/message', (req, res) => {
   res.json({ message: 'Hello from Node.js backend!' });
 });
 
-//registerGitHubRoutes(app);
+registerGitHubRoutes(app);
 
 app.get('/auth/github', (req, res) => {
   const state = crypto.randomUUID();
@@ -33,7 +33,7 @@ app.get('/auth/github', (req, res) => {
   const params = new URLSearchParams({
     client_id: process.env.GITHUB_CLIENT_ID,
     redirect_uri: process.env.GITHUB_CALLBACK_URL,
-    scope: 'user repo',
+    scope: 'read:user user:email public_repo',
     prompt: 'consent',
     state,
   });

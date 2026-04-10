@@ -7,6 +7,13 @@ interface HeaderProps {
   selectedRepository: string;
   onRepositoryChange: (repository: string) => void;
   isLoading: boolean;
+  userInfo: {
+    displayName: string;
+    githubUser: string;
+    avatarUrl: string;
+  };
+  onLogout: () => void;
+  onChangeDisplayName: () => void;
   notifications: DashboardNotification[];
   notificationsLoading: boolean;
   notificationsError: string;
@@ -33,6 +40,9 @@ const Header = ({
   selectedRepository,
   onRepositoryChange,
   isLoading,
+  userInfo,
+  onLogout,
+  onChangeDisplayName,
   notifications,
   notificationsLoading,
   notificationsError,
@@ -40,6 +50,7 @@ const Header = ({
   onClearNotifications,
 }: HeaderProps) => {
   const [isBellOpen, setIsBellOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const bellMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -181,8 +192,69 @@ const Header = ({
         </div>
 
         <div className="user-info">
-          <div className="user-icon">👤</div>
-          <span>Shared View</span>
+          <div 
+            className="user-profile-trigger"
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+          >
+            <img 
+              src={userInfo.avatarUrl} 
+              alt={userInfo.displayName}
+              className="user-avatar"
+            />
+            <span className="user-name">{userInfo.displayName}</span>
+            <span className="dropdown-arrow">▼</span>
+          </div>
+          
+          {isProfileOpen && (
+            <>
+              <div className="dropdown-overlay" onClick={() => setIsProfileOpen(false)} />
+              <div className="dropdown-menu">
+                <div className="dropdown-header">
+                  <img 
+                    src={userInfo.avatarUrl} 
+                    alt={userInfo.displayName}
+                    className="dropdown-avatar"
+                  />
+                  <div className="dropdown-user-info">
+                    <strong>{userInfo.displayName}</strong>
+                    <span className="dropdown-github-user">@{userInfo.githubUser}</span>
+                  </div>
+                </div>
+                <div className="dropdown-divider"></div>
+                <button 
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    onChangeDisplayName();
+                  }}
+                  className="dropdown-item"
+                >
+                  <span className="dropdown-icon">✏️</span>
+                  Change Display Name
+                </button>
+                <a
+                  href={`https://github.com/${userInfo.githubUser}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="dropdown-item"
+                  onClick={() => setIsProfileOpen(false)}
+                >
+                  <span className="dropdown-icon">🔗</span>
+                  View GitHub Profile
+                </a>
+                <div className="dropdown-divider"></div>
+                <button 
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    onLogout();
+                  }}
+                  className="dropdown-item logout-item"
+                >
+                  <span className="dropdown-icon">🚪</span>
+                  Logout
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

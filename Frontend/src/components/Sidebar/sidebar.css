@@ -32,12 +32,20 @@
   gap: 6px;
 }
 
+/* Base nav-item styles - FIXED: text should be white on dark background */
 .nav-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
-  color: var(--color-sidebar-text);
+  gap: 12px;
+  padding: 12px 20px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--color-white); /* Changed from black to white */
   text-decoration: none;
   border-left: 3px solid transparent;
   border-radius: 12px;
@@ -45,6 +53,8 @@
     transform 0.2s ease;
   gap: 12px;
 }
+
+/* Remove the duplicate nav-item definition that was causing issues */
 
 .nav-item:hover {
   background-color: var(--color-sidebar-hover);
@@ -60,6 +70,7 @@
 .nav-item-dashboard:hover,
 .nav-item-dashboard.nav-item-active {
   border-left-color: var(--accent-coral);
+  transform: translateX(4px);
 }
 
 .nav-item-metrics:hover,
@@ -99,16 +110,47 @@
 }
 
 .nav-icon {
-  font-size: 1.0625rem;
+  font-size: 20px;
   width: 1.25rem;
   text-align: center;
   opacity: 0.95;
+  color: var(--color-white); /* Ensure icons are white */
 }
 
 .nav-label {
   font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: 0.1px;
+   color: var(--color-white); /* Ensure text is white */
+}
+
+/* Active state styling */
+.nav-item.active {
+  background-color: var(--accent-coral);
+  color: white;
+}
+
+.nav-item.active .nav-icon {
+  color: white;
+}
+
+.nav-item.active .nav-label {
+  color: white;
+}
+
+/* Loading state for report button */
+.nav-item.loading {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.nav-item.loading .nav-label {
+  position: relative;
+}
+
+.nav-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .nav-active-indicator {
@@ -122,6 +164,7 @@
   flex-shrink: 0;
 }
 
+/* Sidebar footer */
 .sidebar-footer {
   padding: 18px 22px 20px;
   border-top: 1px solid var(--color-sidebar-border);
@@ -132,4 +175,17 @@
 
 .sidebar-footer p {
   margin: 0;
+}
+
+/* Optional: Add a subtle indicator for the reports tab */
+.nav-item:has(.nav-label:contains("Reports"))::before {
+  content: "📄";
+  position: absolute;
+  right: 20px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.nav-item:has(.nav-label:contains("Reports")):hover::before {
+  opacity: 0.5;
 }
