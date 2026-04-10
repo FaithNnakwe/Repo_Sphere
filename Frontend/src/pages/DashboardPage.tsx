@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Dashboard from "../components/Dashboard/Dashboard";
@@ -28,6 +28,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 const DASHBOARD_NOTIFICATIONS_KEY = "dashboardNotifications";
 const DASHBOARD_DISMISSED_NOTIFICATIONS_KEY = "dashboardDismissedNotifications";
 const DASHBOARD_UNLOCKED_ACHIEVEMENTS_KEY = "dashboardUnlockedAchievements";
+const SELECTED_REPOSITORY_KEY = "selectedRepository";
 const ACHIEVEMENT_MILESTONES = [1, 25, 100, 250, 500, 1000, 2500, 5000];
 
 const defaultNotificationSettings: Pick<
@@ -84,6 +85,10 @@ const DashboardPage = () => {
   const [notificationSettings, setNotificationSettings] =
     useState<typeof defaultNotificationSettings>(defaultNotificationSettings);
 
+  // Refs to prevent duplicate achievements
+  const hasInitializedAchievements = useRef(false);
+  const processedAchievementsRef = useRef<Set<number>>(new Set());
+
   const unlockedMilestonesStorageKey = useMemo(
     () => `${DASHBOARD_UNLOCKED_ACHIEVEMENTS_KEY}:${currentGhUser || "guest"}`,
     [currentGhUser]
@@ -99,7 +104,6 @@ const DashboardPage = () => {
         setCurrentGhUser("");
       }
     };
-
     void loadCurrentUser();
   }, []);
 
@@ -137,13 +141,29 @@ const DashboardPage = () => {
         const data: RepoApiResponse[] = await res.json();
         const parsed = data.map(parseRepository).filter((r): r is RepositoryOption => r !== null);
         setRepositories(parsed);
-        if (parsed.length > 0) setSelectedRepository(parsed[0].fullName);
-        else setErrorMessage("No repositories found.");
+        
+        // Load saved repository from localStorage
+        const savedRepository = localStorage.getItem(SELECTED_REPOSITORY_KEY);
+        if (savedRepository && parsed.some(repo => repo.fullName === savedRepository)) {
+          setSelectedRepository(savedRepository);
+        } else if (parsed.length > 0) {
+          setSelectedRepository(parsed[0].fullName);
+          localStorage.setItem(SELECTED_REPOSITORY_KEY, parsed[0].fullName);
+        } else {
+          setErrorMessage("No repositories found.");
+        }
       } catch (error) { console.error(error); setErrorMessage((error as Error).message); }
       finally { setIsLoading(false); }
     };
     void loadRepos();
   }, [userInfo.isLoggedIn]);
+
+  // Save selected repository to localStorage whenever it changes
+  useEffect(() => {
+    if (selectedRepository) {
+      localStorage.setItem(SELECTED_REPOSITORY_KEY, selectedRepository);
+    }
+  }, [selectedRepository]);
 
   // --- Load Repository Metrics ---
   useEffect(() => {
@@ -231,14 +251,48 @@ const DashboardPage = () => {
     void loadRepositoryMetrics();
   }, [selectedRepository, currentGhUser]);
 
-  // --- Achievement Notifications ---
+  // --- Load Unlocked Milestones from localStorage ---
+  useEffect(() => {
+    const storedUnlockedMilestones = localStorage.getItem(unlockedMilestonesStorageKey);
+    if (!storedUnlockedMilestones) {
+      setUnlockedMilestones([]);
+      return;
+    }
+
+    try {
+      const parsedMilestones = JSON.parse(storedUnlockedMilestones) as number[];
+      setUnlockedMilestones(Array.isArray(parsedMilestones) ? parsedMilestones : []);
+      // Initialize processed achievements ref with already unlocked milestones
+      const unlockedSet = new Set(Array.isArray(parsedMilestones) ? parsedMilestones : []);
+      processedAchievementsRef.current = unlockedSet;
+    } catch {
+      setUnlockedMilestones([]);
+    }
+  }, [unlockedMilestonesStorageKey]);
+
+  // --- Achievement Notifications (Fixed to only trigger once) ---
   useEffect(() => {
     if (!notificationSettings.inApp || !notificationSettings.achievements) {
       return;
     }
 
+    // Skip if still loading or no commits yet
+    if (isLoading || currentUserCommits === 0) {
+      return;
+    }
+
+    // Skip initial load to prevent showing achievements on page load
+    if (!hasInitializedAchievements.current) {
+      hasInitializedAchievements.current = true;
+      return;
+    }
+
+    // Find newly unlocked milestones that haven't been processed
     const newlyUnlocked = ACHIEVEMENT_MILESTONES.filter(
-      (milestone) => currentUserCommits >= milestone && !unlockedMilestones.includes(milestone)
+      (milestone) => 
+        currentUserCommits >= milestone && 
+        !unlockedMilestones.includes(milestone) &&
+        !processedAchievementsRef.current.has(milestone)
     );
 
     if (newlyUnlocked.length === 0) {
@@ -247,18 +301,25 @@ const DashboardPage = () => {
 
     const now = new Date().toISOString();
 
-    setUnlockedMilestones((currentMilestones) => [
-      ...currentMilestones,
-      ...newlyUnlocked.filter((milestone) => !currentMilestones.includes(milestone)),
-    ]);
+    // Mark as processed immediately to prevent duplicate triggers
+    newlyUnlocked.forEach(milestone => {
+      processedAchievementsRef.current.add(milestone);
+    });
+
+    // Update unlocked milestones state and localStorage
+    setUnlockedMilestones((currentMilestones) => {
+      const updatedMilestones = [...currentMilestones, ...newlyUnlocked];
+      localStorage.setItem(unlockedMilestonesStorageKey, JSON.stringify(updatedMilestones));
+      return updatedMilestones;
+    });
 
     const achievementNotifications: DashboardNotification[] = newlyUnlocked.map((milestone) => ({
-      id: `achievement-${milestone}`,
+      id: `achievement-${milestone}-${Date.now()}`,
       notificationType: "achievement",
       achievementMilestone: milestone,
       reason: "achievement",
       subject: {
-        title: `Milestone unlocked: ${milestone} contributions!`,
+        title: `🎉 Milestone unlocked: ${milestone} contributions! 🎉`,
         type: "Achievement",
         url: null,
       },
@@ -270,14 +331,18 @@ const DashboardPage = () => {
       url: "",
     }));
 
+    // Show toast notifications
     newlyUnlocked.forEach((milestone) => {
-      toast.success(`Achievement unlocked: ${milestone} contributions!`, {
-        autoClose: 4000,
+      toast.success(`🎉 Achievement unlocked: ${milestone} contributions! 🎉`, {
+        autoClose: 5000,
+        position: "top-right",
       });
     });
 
+    // Add to celebration queue
     setCelebrationQueue((currentQueue) => [...currentQueue, ...newlyUnlocked]);
 
+    // Add to notifications
     setNotifications((currentNotifications) => {
       const nextNotifications = new Map<string, DashboardNotification>();
 
@@ -288,7 +353,13 @@ const DashboardPage = () => {
       });
 
       achievementNotifications.forEach((notification) => {
-        if (!dismissedNotificationIds.includes(notification.id)) {
+        const alreadyExists = Array.from(nextNotifications.values()).some(
+          (existing) => 
+            existing.notificationType === "achievement" && 
+            existing.achievementMilestone === notification.achievementMilestone
+        );
+        
+        if (!dismissedNotificationIds.includes(notification.id) && !alreadyExists) {
           nextNotifications.set(notification.id, notification);
         }
       });
@@ -304,6 +375,8 @@ const DashboardPage = () => {
     notificationSettings.inApp,
     selectedRepository,
     unlockedMilestones,
+    isLoading,
+    unlockedMilestonesStorageKey,
   ]);
 
   // --- Celebration Queue ---
@@ -334,7 +407,6 @@ const DashboardPage = () => {
   // --- Store Notifications ---
   useEffect(() => { localStorage.setItem(DASHBOARD_NOTIFICATIONS_KEY, JSON.stringify(notifications)); }, [notifications]);
   useEffect(() => { localStorage.setItem(DASHBOARD_DISMISSED_NOTIFICATIONS_KEY, JSON.stringify(dismissedNotificationIds)); }, [dismissedNotificationIds]);
-  useEffect(() => { localStorage.setItem(unlockedMilestonesStorageKey, JSON.stringify(unlockedMilestones)); }, [unlockedMilestones, unlockedMilestonesStorageKey]);
 
   // --- Load GitHub Notifications ---
   useEffect(() => {
@@ -350,7 +422,6 @@ const DashboardPage = () => {
           return;
         }
 
-        // Extract only the needed preferences for the API call
         const notificationPrefs = {
           commits: resolvedSettings.commits,
           comments: resolvedSettings.comments,
@@ -361,11 +432,7 @@ const DashboardPage = () => {
         };
 
         const fetched = await getGithubNotifications(notificationPrefs);
-        
-        // Properly handle the fetched notifications
         const filteredNotifications = fetched.filter(n => !dismissedNotificationIds.includes(n.id));
-        
-        // Merge existing and new notifications, removing duplicates by id
         const allNotifications = [...notifications, ...filteredNotifications];
         const uniqueNotifications = Array.from(
           new Map(allNotifications.map(n => [n.id, n])).values()
@@ -395,13 +462,18 @@ const DashboardPage = () => {
   };
 
   // --- Actions ---
-  const handleLogout = async () => { localStorage.removeItem("displayName"); try { await logoutFromGithub(); } finally { window.location.href = "/login"; } };
-  const handleChangeDisplayName = () => { localStorage.removeItem("displayName"); navigate("/setup-profile"); };
+  const handleLogout = async () => { 
+    localStorage.removeItem(SELECTED_REPOSITORY_KEY);
+    try { await logoutFromGithub(); } finally { window.location.href = "/login"; } 
+  };
+  
+  const handleChangeDisplayName = () => { 
+    localStorage.removeItem("displayName"); 
+    navigate("/setup-profile"); 
+  };
+  
   const handleTabChange = (tab: string) => setActiveTab(tab);
-
-  const handleSidebarToggle = () => {
-  setIsSidebarCollapsed(!isSidebarCollapsed);
-};
+  const handleSidebarToggle = () => setIsSidebarCollapsed(!isSidebarCollapsed);
 
   const handleGenerateReport = async () => {
     if (!selectedRepository) return setErrorMessage("Please select a repository first");
@@ -414,10 +486,24 @@ const DashboardPage = () => {
         { icon: "📝", label: "# Lines of Code", value: "N/A" },
       ];
       const latestCommitMessage = commits[0]?.message || "No commits available";
-      const reportData = { repository: selectedRepository, date: new Date().toLocaleString(), stats, teamMembers, languages, commitCount, pullRequestCount, latestCommitMessage };
+      const reportData = { 
+        repository: selectedRepository, 
+        date: new Date().toLocaleString(), 
+        stats, 
+        teamMembers, 
+        languages, 
+        commitCount, 
+        pullRequestCount, 
+        latestCommitMessage 
+      };
       await generatePDFReport("report-content", reportData);
-    } catch { setErrorMessage("Failed to generate PDF report"); }
-    finally { setIsGeneratingReport(false); }
+      toast.success("Report generated successfully!");
+    } catch { 
+      setErrorMessage("Failed to generate PDF report");
+      toast.error("Failed to generate report");
+    } finally { 
+      setIsGeneratingReport(false); 
+    }
   };
 
   const stats = useMemo(() => [
@@ -442,13 +528,13 @@ const DashboardPage = () => {
       case "Settings":
         return (
           <div className="dashboard-container">
-<Sidebar 
-  onTabChange={handleTabChange} 
-  onGenerateReport={handleGenerateReport} 
-  isGeneratingReport={isGeneratingReport}
-  isCollapsed={isSidebarCollapsed}
-  onToggleCollapse={handleSidebarToggle}
-/>
+            <Sidebar 
+              onTabChange={handleTabChange} 
+              onGenerateReport={handleGenerateReport} 
+              isGeneratingReport={isGeneratingReport}
+              isCollapsed={isSidebarCollapsed}
+              onToggleCollapse={handleSidebarToggle}
+            />
             <div className={`dashboard-main ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
               <Header 
                 repositories={repositories.map(r=>r.fullName)} 
@@ -499,7 +585,6 @@ const DashboardPage = () => {
               isSidebarCollapsed={isSidebarCollapsed}
               onSidebarToggle={handleSidebarToggle}
             />
-
             {activeCelebrationMilestone !== null && (
               <AchievementCelebration
                 milestone={activeCelebrationMilestone}
