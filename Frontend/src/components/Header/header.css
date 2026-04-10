@@ -1,32 +1,34 @@
 .header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* Changed from space-between to center */
   align-items: center;
   padding: 18px 22px;
-  background-color: var(--color-surface, #ffffff); /* Changed from --color-white */
+  background-color: var(--color-surface, #ffffff);
   border-bottom: 1px solid var(--color-line);
-  gap: 20px;
+  gap: 300px;
 }
 
 .header-left {
   display: flex;
-  gap: 20px;
-  align-items: center;
+  gap: 50px;
+  align-items: space-between; /* Changed from center to space-between */
+  /* Remove flex: 1 */
 }
 
 .repo-dropdown,
 .date-display {
   padding: 10px 16px;
-  background-color: var(--color-surface, #ffffff); /* Changed from --color-white */
+  background-color: var(--color-surface, #ffffff);
   border: 1px solid var(--color-line);
   border-radius: 6px;
   font-size: 0.9375rem;
   font-weight: 500;
-  color: var(--color-text-strong, #1a1a1a); /* Changed from --color-black */
+  color: var(--color-text-strong, #1a1a1a);
 }
+
 .repo-dropdown select,
 .repo-dropdown .dropdown-select {
-  background-color: transparent; /* Make background transparent to inherit from parent */
+  background-color: transparent;
   color: var(--color-text-strong, #1a1a1a);
   border: none;
   font-weight: 600;
@@ -48,7 +50,7 @@
   cursor: pointer;
   font-weight: 500;
   font-size: 0.875rem;
-  color: var(--color-text-strong, #1a1a1a); /* Changed from --color-black */
+  color: var(--color-text-strong, #1a1a1a);
 }
 
 .dropdown-select {
@@ -56,7 +58,7 @@
   background: none;
   font-weight: 600;
   font-size: 0.9375rem;
-  color: var(--color-text-strong, #1a1a1a); /* Changed from --color-black */
+  color: var(--color-text-strong, #1a1a1a);
   outline: none;
 }
 
@@ -71,29 +73,9 @@
 
 .header-right {
   display: flex;
-  gap: 15px;
-  align-items: center;
-  margin-left: auto;
-}
-
-.search-bar {
-  padding: 10px 16px;
-  border: 1px solid var(--color-line);
-  border-radius: 6px;
-  width: 320px;
-  font-size: 0.9375rem;
-  background-color: var(--color-surface, #ffffff); /* Added for dark mode */
-  color: var(--color-text-strong, #1a1a1a); /* Added for dark mode */
-}
-
-.search-bar:focus {
-  outline: none;
-  border-color: var(--accent-coral);
-  box-shadow: 0 0 0 3px rgba(255, 111, 97, 0.18);
-}
-
-.search-bar::placeholder {
-  color: var(--color-text-subtle); /* Added for dark mode */
+  gap: 50px;
+  align-items: space-between; /* Changed from center to space-between */
+  /* Remove margin-left: auto and flex properties */
 }
 
 /* Updated user-info styles for profile trigger */
@@ -106,18 +88,18 @@
   align-items: center;
   gap: 8px;
   padding: 8px 14px;
-  background-color: var(--color-surface, #ffffff); /* Changed from --color-white */
+  background-color: var(--color-surface, #ffffff);
   border: 1px solid var(--color-line);
   border-radius: 6px;
   font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--color-text-strong, #1a1a1a); /* Changed from --color-black */
+  color: var(--color-text-strong, #1a1a1a);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .user-profile-trigger:hover {
-  background-color: var(--color-surface-muted, #f9f9f9); /* Changed from hardcoded #f9f9f9 */
+  background-color: var(--color-surface-muted, #f9f9f9);
   border-color: var(--accent-coral);
 }
 
@@ -131,12 +113,12 @@
 .user-name {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-text-strong, #1a1a1a); /* Changed from --color-black */
+  color: var(--color-text-strong, #1a1a1a);
 }
 
 .dropdown-arrow {
   font-size: 10px;
-  color: var(--color-text-subtle, #666666); /* Changed from #666 */
+  color: var(--color-text-subtle, #666666);
   transition: transform 0.2s ease;
   margin-left: 4px;
 }
@@ -157,7 +139,7 @@
   top: calc(100% + 8px);
   right: 0;
   min-width: 280px;
-  background-color: var(--color-surface, #ffffff); /* Changed from --color-white */
+  background-color: var(--color-surface, #ffffff);
   border: 1px solid var(--color-line);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
@@ -182,7 +164,7 @@
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background-color: var(--color-surface-muted, #f9f9f9); /* Changed from hardcoded */
+  background-color: var(--color-surface-muted, #f9f9f9);
   border-bottom: 1px solid var(--color-line);
 }
 
@@ -202,12 +184,12 @@
 .dropdown-user-info strong {
   font-size: 14px;
   font-weight: 600;
-  color: var(--color-text-strong, #1a1a1a); /* Changed from --color-black */
+  color: var(--color-text-strong, #1a1a1a);
 }
 
 .dropdown-github-user {
   font-size: 12px;
-  color: var(--color-text-subtle, #666666); /* Changed from #666 */
+  color: var(--color-text-subtle, #666666);
 }
 
 .dropdown-divider {
@@ -226,14 +208,14 @@
   border: none;
   text-align: left;
   font-size: 14px;
-  color: var(--color-text-strong, #1a1a1a); /* Changed from --color-black */
+  color: var(--color-text-strong, #1a1a1a);
   cursor: pointer;
   transition: background-color 0.2s ease;
   text-decoration: none;
 }
 
 .dropdown-item:hover {
-  background-color: var(--color-surface-muted, #f9f9f9); /* Changed from hardcoded */
+  background-color: var(--color-surface-muted, #f9f9f9);
 }
 
 .dropdown-icon {
@@ -242,11 +224,11 @@
 }
 
 .logout-item {
-  color: #dc3545; /* Keep red for logout - this is semantic */
+  color: #dc3545;
 }
 
 .logout-item:hover {
-  background-color: #ffeef0; /* Keep light red background for logout hover */
+  background-color: #ffeef0;
 }
 
 /* Notification Bell Styles */
@@ -263,7 +245,7 @@
   height: 42px;
   border: 1px solid var(--color-line);
   border-radius: 10px;
-  background-color: var(--color-surface, #ffffff); /* Changed from --color-white */
+  background-color: var(--color-surface, #ffffff);
   cursor: pointer;
 }
 
@@ -288,7 +270,7 @@
   height: 20px;
   border-radius: 999px;
   padding: 0 6px;
-  background-color: var(--accent-coral, #dc3545); /* Changed for better visibility */
+  background-color: var(--accent-coral, #dc3545);
   color: var(--color-white, #ffffff);
   font-size: 0.75rem;
   font-weight: 700;
@@ -304,7 +286,7 @@
   width: min(380px, calc(100vw - 40px));
   border: 1px solid var(--color-line);
   border-radius: 12px;
-  background-color: var(--color-surface, #ffffff); /* Changed from --color-white */
+  background-color: var(--color-surface, #ffffff);
   box-shadow: 0 18px 40px var(--color-shadow-strong);
   z-index: 20;
   overflow: hidden;
@@ -322,7 +304,7 @@
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--color-text-strong, #1a1a1a); /* Added for dark mode */
+  color: var(--color-text-strong, #1a1a1a);
 }
 
 .notification-menu-clear {
@@ -337,7 +319,7 @@
 .notification-menu-state {
   margin: 0;
   padding: 14px;
-  color: var(--color-text-subtle); /* Changed from --color-muted */
+  color: var(--color-text-subtle);
   font-size: 0.875rem;
 }
 
@@ -359,7 +341,7 @@
   border-radius: 10px;
   padding: 10px;
   margin-bottom: 8px;
-  background-color: var(--color-surface, #ffffff); /* Added for dark mode */
+  background-color: var(--color-surface, #ffffff);
 }
 
 .notification-menu-item:last-child {
@@ -408,7 +390,7 @@
   margin: 8px 0;
   font-size: 0.9375rem;
   line-height: 1.4;
-  color: var(--color-text-strong, #1a1a1a); /* Changed from --color-black */
+  color: var(--color-text-strong, #1a1a1a);
 }
 
 .notification-meta {
@@ -416,7 +398,7 @@
   flex-wrap: wrap;
   gap: 8px 14px;
   font-size: 0.8125rem;
-  color: var(--color-text-subtle); /* Changed from --color-muted */
+  color: var(--color-text-subtle);
 }
 
 /* User icon fallback */
@@ -424,12 +406,8 @@
   font-size: 16px;
 }
 
-/* Responsive adjustments */
+/* Responsive styles */
 @media (max-width: 1024px) {
-  .search-bar {
-    width: 220px;
-  }
-  
   .user-name {
     display: none;
   }
@@ -448,11 +426,11 @@
     padding: 12px 16px;
     flex-direction: column;
     align-items: stretch;
-    flex-wrap: wrap;
+    gap: 12px;
   }
   
   .header-left {
-    flex: 1;
+    justify-content: center; /* Center on mobile */
     width: 100%;
   }
   
@@ -462,17 +440,10 @@
   }
   
   .header-right {
-    margin-left: 0;
+    justify-content: center; /* Center on mobile */
     width: 100%;
-    justify-content: space-between;
   }
-  
-  .search-bar {
-    flex: 1;
-    width: auto;
-    min-width: 140px;
-  }
-  
+ 
   .dropdown-menu {
     position: fixed;
     top: auto;

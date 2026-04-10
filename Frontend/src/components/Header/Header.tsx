@@ -106,11 +106,6 @@ const Header = ({
       </div>
 
       <div className="header-right">
-        <input
-          type="text"
-          className="search-bar"
-          placeholder="Search Bar"
-        />
 
         <div className="notification-bell" ref={bellMenuRef}>
           <button
