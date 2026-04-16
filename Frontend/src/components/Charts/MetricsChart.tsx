@@ -21,7 +21,7 @@ const MetricsChart = ({
           <p><strong>Repository:</strong> {repository || "Not selected"}</p>
           <p><strong>Recent Commits:</strong> {commitCount}</p>
           <p><strong>Open Pull Requests:</strong> {pullRequestCount}</p>
-          <p><strong>Latest Commit:</strong> {latestCommitMessage}</p>
+          <p><strong>Latest Commit message:</strong> {latestCommitMessage}</p>
         </div>
       </div>
     </div>

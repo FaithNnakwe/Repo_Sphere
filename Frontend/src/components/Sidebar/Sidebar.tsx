@@ -1,51 +1,70 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate  } from "react-router-dom";
 import "./sidebar.css";
 
 interface SidebarProps {
   onTabChange?: (tab: string) => void;
   onGenerateReport?: () => void;
   isGeneratingReport?: boolean;
-  isCollapsed?: boolean;  // ADD THIS LINE
-  onToggleCollapse?: () => void;  // ADD THIS LINE
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
+  activeTab?: string;  // Add this to track active tab
 }
 
 const Sidebar = ({ 
   onTabChange, 
   onGenerateReport,
   isGeneratingReport = false, 
-  isCollapsed = false,  // ADD THIS LINE
-  onToggleCollapse      // ADD THIS LINE
+  isCollapsed = false,
+  onToggleCollapse,
+  activeTab = "Dashboard"  // Default to Dashboard
 }: SidebarProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const toggleSidebar = () => {
     if (onToggleCollapse) {
-      onToggleCollapse();  // Call the parent's toggle function
+      onToggleCollapse();
     }
   };
 
   const menuItems = [
-    { label: "Dashboard", icon: "📊", path: "/", accentClass: "nav-item-dashboard" },
-    { label: "GitHub Metrics", icon: "📈", path: "/github-metrics", accentClass: "nav-item-metrics" },
-    { label: "Download Report", icon: "⬇️", action: "report", path: "#", accentClass: "nav-item-reports" },
-    { label: "Settings", icon: "⚙️", path: "/settings", accentClass: "nav-item-settings" }
+    { label: "Dashboard", icon: "📊", type: "route", path: "/", tabName: "Dashboard", accentClass: "nav-item-dashboard" },
+    { label: "GitHub Metrics", icon: "📈", type: "tab", tabName: "Github Metrics", accentClass: "nav-item-metrics" },
+    { label: "Download Report", icon: "⬇️", type: "action", action: "report", accentClass: "nav-item-reports" },
+    { label: "Settings", icon: "⚙️", type: "route", path: "/settings", tabName: "Settings", accentClass: "nav-item-settings" }
   ];
 
   const handleItemClick = (item: any) => {
-    if (item.action === "report" && onGenerateReport) {
-      onGenerateReport();
-    } else if (onTabChange && item.path !== "#") {
-      onTabChange(item.label);
+  if (item.type === "action" && item.action === "report" && onGenerateReport) {
+    onGenerateReport();
+  } else if (item.type === "tab") {
+    // For GitHub Metrics tab
+    if (location.pathname !== "/") {
+      // Navigate to home page with a query parameter
+      navigate(`/?tab=${encodeURIComponent(item.tabName)}`);
+    } else if (onTabChange) {
+      onTabChange(item.tabName);
     }
-  };
+  } else if (item.type === "route") {
+    if (item.path === "/" && onTabChange) {
+      onTabChange("Dashboard");
+    }
+    navigate(item.path);
+  }
+};
 
   // Check if the current path matches the item's path
   const isActive = (item: any) => {
-    if (item.path === "#") return false;
-    if (item.path === "/") {
-      return location.pathname === "/";
+    if (item.type === "tab") {
+      return activeTab === item.tabName;
     }
-    return location.pathname === item.path;
+    if (item.type === "route") {
+      if (item.path === "/") {
+        return location.pathname === "/" && activeTab === "Dashboard";
+      }
+      return location.pathname === item.path;
+    }
+    return false;
   };
 
   return (
@@ -69,39 +88,57 @@ const Sidebar = ({
       </div>
 
       <nav className="sidebar-nav">
-        {menuItems.map((item, index) => (
-          item.action === "report" ? (
-            <button 
-              key={index}
-              className={`nav-item ${item.accentClass} ${isGeneratingReport ? 'loading' : ''}`}
-              onClick={() => handleItemClick(item)}
-              disabled={isGeneratingReport}
-              aria-label={isCollapsed ? item.label : "Generate report"}
-              title={isCollapsed ? item.label : ""}
-            >
-              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
-              {!isCollapsed && (
-                <span className="nav-label">
-                  {isGeneratingReport ? "Generating..." : item.label}
-                </span>
-              )}
-              {isActive(item) && <span className="nav-active-indicator" aria-hidden="true" />}
-            </button>
-          ) : (
-            <Link 
-              key={index} 
-              to={item.path} 
-              className={`nav-item ${item.accentClass} ${isActive(item) ? 'active' : ''}`}
-              onClick={() => handleItemClick(item)}
-              aria-label={isCollapsed ? item.label : `Go to ${item.label}`}
-              title={isCollapsed ? item.label : ""}
-            >
-              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
-              {!isCollapsed && <span className="nav-label">{item.label}</span>}
-              {isActive(item) && <span className="nav-active-indicator" aria-hidden="true" />}
-            </Link>
-          )
-        ))}
+        {menuItems.map((item, index) => {
+          if (item.type === "action") {
+            return (
+              <button 
+                key={index}
+                className={`nav-item ${item.accentClass} ${isGeneratingReport ? 'loading' : ''}`}
+                onClick={() => handleItemClick(item)}
+                disabled={isGeneratingReport}
+                aria-label={isCollapsed ? item.label : "Generate report"}
+                title={isCollapsed ? item.label : ""}
+              >
+                <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+                {!isCollapsed && (
+                  <span className="nav-label">
+                    {isGeneratingReport ? "Generating..." : item.label}
+                  </span>
+                )}
+              </button>
+            );
+          } else if (item.type === "tab") {
+            return (
+              <button 
+                key={index}
+                className={`nav-item ${item.accentClass} ${isActive(item) ? 'active' : ''}`}
+                onClick={() => handleItemClick(item)}
+                aria-label={isCollapsed ? item.label : `Go to ${item.label}`}
+                title={isCollapsed ? item.label : ""}
+              >
+                <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+                {!isCollapsed && <span className="nav-label">{item.label}</span>}
+                {isActive(item) && <span className="nav-active-indicator" aria-hidden="true" />}
+              </button>
+            );
+          } else {
+            // Regular route links (Dashboard, Settings)
+            return (
+              <Link 
+                key={index} 
+                to={item.path as string}  // Type assertion to fix the TypeScript error
+                className={`nav-item ${item.accentClass} ${isActive(item) ? 'active' : ''}`}
+                onClick={() => handleItemClick(item)}
+                aria-label={isCollapsed ? item.label : `Go to ${item.label}`}
+                title={isCollapsed ? item.label : ""}
+              >
+                <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+                {!isCollapsed && <span className="nav-label">{item.label}</span>}
+                {isActive(item) && <span className="nav-active-indicator" aria-hidden="true" />}
+              </Link>
+            );
+          }
+        })}
       </nav>
 
       {!isCollapsed && (

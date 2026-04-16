@@ -10,14 +10,12 @@ interface StatCardProps {
 const StatCard = ({ 
   icon = "📊", 
   label, 
-  value, 
-  showGraph = true 
+  value,  
 }: StatCardProps) => {
   return (
     <div className="stat-card">
       <div className="card-top">
         <div className="card-icon">{icon}</div>
-        {showGraph && <div className="card-graph">Graph</div>}
       </div>
 
       <div className="card-bottom">

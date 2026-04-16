@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import Dashboard from "../components/Dashboard/Dashboard";
 import AchievementCelebration from "../components/AchievementCelebration/AchievementCelebration";
 import Settings from "./Settings/Settings";
 import Sidebar from "../components/Sidebar/Sidebar";
 import Header from "../components/Header/Header";
+import MetricsPage from '../Metrics/MetricsPage';
 import { getCurrentUser, logoutFromGithub, getGithubNotifications, getNotificationSettings } from "../api";
 import { generatePDFReport } from "../utils/pdfGenerator";
 import {
@@ -55,6 +56,7 @@ const parseRepository = (repo: RepoApiResponse): RepositoryOption | null => {
 // --- Component ---
 const DashboardPage = () => {
   const navigate = useNavigate();
+const [searchParams] = useSearchParams();
 
   // --- User and Repository State ---
   const [userInfo, setUserInfo] = useState<UserInfo>({ displayName: "", githubUser: "", avatarUrl: "", isLoggedIn: false });
@@ -66,6 +68,7 @@ const DashboardPage = () => {
   const [commitCount, setCommitCount] = useState<number>(0);
   const [pullRequestCount, setPullRequestCount] = useState<number>(0);
   const [issueCount, setIssueCount] = useState<number>(0);
+  const [linesOfCode, setLinesOfCode] = useState<number>(0);
   const [currentUserCommits, setCurrentUserCommits] = useState<number>(0);
   const [currentGhUser, setCurrentGhUser] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -93,6 +96,13 @@ const DashboardPage = () => {
     () => `${DASHBOARD_UNLOCKED_ACHIEVEMENTS_KEY}:${currentGhUser || "guest"}`,
     [currentGhUser]
   );
+
+  useEffect(() => {
+  const tabFromUrl = searchParams.get("tab");
+  if (tabFromUrl) {
+    setActiveTab(tabFromUrl);
+  }
+}, [searchParams]);
 
   // --- Load Current User ---
   useEffect(() => {
@@ -183,11 +193,12 @@ const DashboardPage = () => {
     const loadRepositoryMetrics = async () => {
       setIsLoading(true); setErrorMessage("");
       try {
-        const [commitsRes, pullsRes, languagesRes, teamRes] = await Promise.all([
+        const [commitsRes, pullsRes, languagesRes, teamRes, locRes] = await Promise.all([
           fetch(buildApiUrl(`/api/repos/${owner}/${repo}/commits`), { credentials: "include" }),
           fetch(buildApiUrl(`/api/repos/${owner}/${repo}/pulls`), { credentials: "include" }),
           fetch(buildApiUrl(`/api/repos/${owner}/${repo}/languages`), { credentials: "include" }),
           fetch(buildApiUrl(`/api/repos/${owner}/${repo}/team-contributions`), { credentials: "include" }),
+          fetch(buildApiUrl(`/api/metrics/${owner}/${repo}/lines-of-code`), { credentials: "include" }), // Add this line
         ]);
 
         if (!commitsRes.ok || !pullsRes.ok) throw new Error("Unable to load metrics");
@@ -226,6 +237,14 @@ const DashboardPage = () => {
           setIssueCount(0);
           setCurrentUserCommits(0);
         }
+
+        // Add this after your other response handling
+if (locRes.ok) {
+  const locData = await locRes.json();
+  setLinesOfCode(locData.totalLines || locData.linesOfCode || 0);
+} else {
+  setLinesOfCode(0);
+}
 
         if (languagesRes.ok) {
           const langMap: Record<string, number> = await languagesRes.json();
@@ -472,7 +491,10 @@ const DashboardPage = () => {
     navigate("/setup-profile"); 
   };
   
-  const handleTabChange = (tab: string) => setActiveTab(tab);
+  const handleTabChange = (tab: string) => {
+  console.log("Tab changing to:", tab); // Add this line
+  setActiveTab(tab);
+};
   const handleSidebarToggle = () => setIsSidebarCollapsed(!isSidebarCollapsed);
 
   const handleGenerateReport = async () => {
@@ -510,8 +532,8 @@ const DashboardPage = () => {
     { icon: "📊", label: "Total Number of Commits", value: commitCount },
     { icon: "🔀", label: "Total Pull Requests", value: pullRequestCount },
     { icon: "⚠️", label: "Issues Opened", value: issueCount },
-    { icon: "📝", label: "# Lines of Code", value: "N/A" },
-  ], [commitCount, pullRequestCount, issueCount]);
+    { icon: "📝", label: "# Lines of Code", value: linesOfCode.toLocaleString() },
+  ], [commitCount, pullRequestCount, issueCount, linesOfCode]);
 
   const alertMessage = useMemo(() => {
     if (errorMessage) return errorMessage;
@@ -524,8 +546,41 @@ const DashboardPage = () => {
 
   // --- Render ---
   const renderContent = () => {
-    switch(activeTab) {
-      case "Settings":
+  switch(activeTab) {
+    case "Settings":
+      return (
+        <div className="dashboard-container">
+          <Sidebar 
+            onTabChange={handleTabChange} 
+            onGenerateReport={handleGenerateReport} 
+            isGeneratingReport={isGeneratingReport}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={handleSidebarToggle}
+            activeTab={activeTab}
+          />
+          <div className={`dashboard-main ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+            <Header 
+              repositories={repositories.map(r=>r.fullName)} 
+              selectedRepository={selectedRepository} 
+              onRepositoryChange={setSelectedRepository} 
+              isLoading={isLoading} 
+              userInfo={userInfo} 
+              onLogout={handleLogout} 
+              onChangeDisplayName={handleChangeDisplayName}
+              notifications={notifications}
+              notificationsLoading={notificationsLoading}
+              notificationsError={notificationsError}
+              onRemoveNotification={handleRemoveNotification}
+              onClearNotifications={handleClearNotifications}
+            />
+            <div className="dashboard-content"><Settings /></div>
+          </div>
+        </div>
+      );
+    
+    // Add this new case for Github Metrics
+    case "Github Metrics":
+      if (!selectedRepository) {
         return (
           <div className="dashboard-container">
             <Sidebar 
@@ -534,6 +589,7 @@ const DashboardPage = () => {
               isGeneratingReport={isGeneratingReport}
               isCollapsed={isSidebarCollapsed}
               onToggleCollapse={handleSidebarToggle}
+              activeTab={activeTab}
             />
             <div className={`dashboard-main ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
               <Header 
@@ -550,51 +606,90 @@ const DashboardPage = () => {
                 onRemoveNotification={handleRemoveNotification}
                 onClearNotifications={handleClearNotifications}
               />
-              <div className="dashboard-content"><Settings /></div>
+              <div className="dashboard-content">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-8 text-center">
+                  <p className="text-yellow-700">Please select a repository to view metrics</p>
+                </div>
+              </div>
             </div>
           </div>
         );
-      default:
-        return (
-          <>
-            <Dashboard
-              userInfo={userInfo}
-              onLogout={handleLogout}
+      }
+      
+      const [owner, repo] = selectedRepository.split("/");
+      return (
+        <div className="dashboard-container">
+          <Sidebar 
+            onTabChange={handleTabChange} 
+            onGenerateReport={handleGenerateReport} 
+            isGeneratingReport={isGeneratingReport}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={handleSidebarToggle}
+            activeTab={activeTab}  // Add this line
+          />
+          <div className={`dashboard-main ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+            <Header 
+              repositories={repositories.map(r=>r.fullName)} 
+              selectedRepository={selectedRepository} 
+              onRepositoryChange={setSelectedRepository} 
+              isLoading={isLoading} 
+              userInfo={userInfo} 
+              onLogout={handleLogout} 
               onChangeDisplayName={handleChangeDisplayName}
-              onGenerateReport={handleGenerateReport}
-              isGeneratingReport={isGeneratingReport}
-              activeTab={activeTab}
-              onTabChange={handleTabChange}
-              repositories={repositories.map(r=>r.fullName)}
-              selectedRepository={selectedRepository}
-              onRepositoryChange={setSelectedRepository}
-              stats={stats}
-              alertMessage={alertMessage}
-              alertIcon={errorMessage ? "⚠️" : "⭐"}
-              isLoading={isLoading}
-              teamMembers={teamMembers}
-              commitCount={commitCount}
-              pullRequestCount={pullRequestCount}
-              latestCommitMessage={latestCommitMessage}
-              languages={languages}
               notifications={notifications}
               notificationsLoading={notificationsLoading}
               notificationsError={notificationsError}
               onRemoveNotification={handleRemoveNotification}
               onClearNotifications={handleClearNotifications}
-              isSidebarCollapsed={isSidebarCollapsed}
-              onSidebarToggle={handleSidebarToggle}
             />
-            {activeCelebrationMilestone !== null && (
-              <AchievementCelebration
-                milestone={activeCelebrationMilestone}
-                onComplete={() => setActiveCelebrationMilestone(null)}
-              />
-            )}
-          </>
-        );
-    }
-  };
+            <div className="dashboard-content">
+              <MetricsPage owner={owner} repo={repo} />
+            </div>
+          </div>
+        </div>
+      );
+    
+    default: // Dashboard tab
+      return (
+        <>
+          <Dashboard
+            userInfo={userInfo}
+            onLogout={handleLogout}
+            onChangeDisplayName={handleChangeDisplayName}
+            onGenerateReport={handleGenerateReport}
+            isGeneratingReport={isGeneratingReport}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            repositories={repositories.map(r=>r.fullName)}
+            selectedRepository={selectedRepository}
+            onRepositoryChange={setSelectedRepository}
+            stats={stats}
+            alertMessage={alertMessage}
+            alertIcon={errorMessage ? "⚠️" : "⭐"}
+            isLoading={isLoading}
+            teamMembers={teamMembers}
+            commitCount={commitCount}
+            pullRequestCount={pullRequestCount}
+            latestCommitMessage={latestCommitMessage}
+            languages={languages}
+            notifications={notifications}
+            notificationsLoading={notificationsLoading}
+            notificationsError={notificationsError}
+            onRemoveNotification={handleRemoveNotification}
+            onClearNotifications={handleClearNotifications}
+            isSidebarCollapsed={isSidebarCollapsed}
+            onSidebarToggle={handleSidebarToggle}
+          />
+          {activeCelebrationMilestone !== null && (
+            <AchievementCelebration
+              milestone={activeCelebrationMilestone}
+              onComplete={() => setActiveCelebrationMilestone(null)}
+            />
+          )}
+        </>
+      );
+  }
+};
 
   return renderContent();
 };
