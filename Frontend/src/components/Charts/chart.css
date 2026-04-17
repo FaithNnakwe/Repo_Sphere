@@ -1,43 +1,109 @@
-.metrics-container {
-  margin-bottom: 30px;
+.metrics-container,
+.languages-container {
+  margin-bottom: 2rem;
 }
 
 .chart-card {
-  background-color: var(--color-white);
+  width: 100%;
+  min-height: 360px;
+  background: var(--color-white);
   border: 1px solid var(--color-line);
-  border-radius: 6px;
-  padding: 20px;
+  border-radius: 16px;
+  padding: 1.5rem 1.5rem 1.25rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.chart-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.06);
+  border-color: var(--accent-coral);
 }
 
 .chart-title {
-  margin: 0 0 20px 0;
-  font-size: 1.0625rem;
-  font-weight: 600;
+  margin: 0 0 1.25rem 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--color-black);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chart-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    var(--color-line),
+    transparent
+  );
 }
 
 .chart-placeholder {
-  background-color: var(--color-white);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(248, 248, 248, 1) 100%
+  );
   border: 1px dashed var(--color-line);
-  border-radius: 4px;
-  padding: 40px;
+  border-radius: 12px;
+  padding: 2rem;
   text-align: center;
   min-height: 300px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-muted);
-  font-size: 0.9375rem;
+  font-size: 0.95rem;
 }
 
 .chart-placeholder p {
   margin: 0;
+  line-height: 1.6;
 }
 
 .metrics-summary {
+  display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
+  justify-content: center;
+  gap: 0.85rem;
+  text-align: left;
+}
+
+.metrics-summary p {
+  width: 100%;
+  margin: 0;
+  padding: 0.85rem 1rem;
+  background: var(--color-white);
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  color: var(--color-black);
+  font-size: 0.96rem;
+  line-height: 1.5;
+}
+
+.metrics-summary p strong {
+  font-weight: 700;
+}
+
+.metrics-summary p:nth-child(1) {
+  border-left: 4px solid var(--accent-coral);
+}
+
+.metrics-summary p:nth-child(2) {
+  border-left: 4px solid var(--accent-yellow);
+}
+
+.metrics-summary p:nth-child(3) {
+  border-left: 4px solid var(--accent-orange);
+}
+
+.metrics-summary p:nth-child(4) {
+  border-left: 4px solid var(--color-black);
 }
 
 .metrics-summary p:nth-child(1) strong {
@@ -50,4 +116,104 @@
 
 .metrics-summary p:nth-child(3) strong {
   color: var(--accent-orange);
+}
+
+.metrics-summary p:nth-child(4) strong {
+  color: var(--color-black);
+}
+
+.latest-commit {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-line);
+  color: var(--color-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.latest-commit strong {
+  color: var(--color-black);
+}
+
+.recharts-responsive-container {
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .chart-card {
+    min-height: 320px;
+    padding: 1rem;
+    border-radius: 14px;
+  }
+
+  .chart-title {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .chart-placeholder {
+    min-height: 240px;
+    padding: 1.25rem;
+  }
+
+  .metrics-summary p {
+    padding: 0.75rem 0.85rem;
+    font-size: 0.92rem;
+  }
+}
+.chart-legend {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.95rem;
+  color: var(--color-black);
+}
+
+.chart-legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.chart-legend-text {
+  color: var(--color-muted);
+}
+
+.chart-heading {
+  margin-bottom: 1rem;
+}
+
+.chart-subtitle {
+  margin: -0.5rem 0 0 0;
+  font-size: 0.92rem;
+  color: var(--color-muted);
+}
+
+.recharts-cartesian-axis-tick-value {
+  font-size: 0.9rem;
+  fill: var(--color-muted);
+}
+
+.recharts-label-list text {
+  fill: var(--color-black);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.latest-commit {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-line);
+  color: var(--color-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  word-break: break-word;
 }

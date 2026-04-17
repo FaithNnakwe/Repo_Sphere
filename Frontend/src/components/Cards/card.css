@@ -61,3 +61,63 @@
   font-weight: 700;
   color: var(--color-black);
 }
+
+
+.stat-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+  border-color: var(--color-black);
+}
+
+.card-top {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.card-icon {
+  width: 48px;
+  height: 48px;
+  border: 1.5px solid;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.card-label {
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  color: var(--color-muted);
+}
+
+.card-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-black);
+}
+
+.card-change {
+  font-size: 0.9rem;
+  font-weight: 600;
+}

@@ -1,4 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Bell,
+  ChevronDown,
+  ExternalLink,
+  LogOut,
+  PencilLine,
+  CalendarDays,
+  FolderGit2,
+  X,
+  Trophy,
+  GitPullRequest,
+} from "lucide-react";
 import "./header.css";
 import type { DashboardNotification } from "../../api";
 
@@ -52,15 +64,18 @@ const Header = ({
   const [isBellOpen, setIsBellOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const bellMenuRef = useRef<HTMLDivElement | null>(null);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (!bellMenuRef.current) {
-        return;
+      const target = event.target as Node;
+
+      if (bellMenuRef.current && !bellMenuRef.current.contains(target)) {
+        setIsBellOpen(false);
       }
 
-      if (!bellMenuRef.current.contains(event.target as Node)) {
-        setIsBellOpen(false);
+      if (profileMenuRef.current && !profileMenuRef.current.contains(target)) {
+        setIsProfileOpen(false);
       }
     };
 
@@ -78,10 +93,19 @@ const Header = ({
     year: "numeric",
   });
 
+  const getNotificationIcon = (notification: DashboardNotification) => {
+    if (notification.notificationType === "achievement") {
+      return <Trophy size={14} strokeWidth={2.2} />;
+    }
+
+    return <GitPullRequest size={14} strokeWidth={2.2} />;
+  };
+
   return (
     <div className="header">
       <div className="header-left">
         <div className="repo-dropdown">
+          <FolderGit2 size={16} className="header-chip-icon" />
           <select
             className="dropdown-select"
             value={selectedRepository}
@@ -101,12 +125,12 @@ const Header = ({
         </div>
 
         <div className="date-display">
+          <CalendarDays size={16} className="header-chip-icon" />
           <span>{today}</span>
         </div>
       </div>
 
       <div className="header-right">
-
         <div className="notification-bell" ref={bellMenuRef}>
           <button
             type="button"
@@ -115,8 +139,10 @@ const Header = ({
             aria-label="Open notifications"
             aria-expanded={isBellOpen}
           >
-            <span className="notification-bell-icon">🔔</span>
-            {unreadCount > 0 && <span className="notification-bell-count">{unreadCount}</span>}
+            <Bell size={18} strokeWidth={2.1} />
+            {unreadCount > 0 && (
+              <span className="notification-bell-count">{unreadCount}</span>
+            )}
           </button>
 
           {isBellOpen && (
@@ -137,7 +163,9 @@ const Header = ({
               {notificationsLoading && unreadCount === 0 ? (
                 <p className="notification-menu-state">Loading notifications...</p>
               ) : notificationsError ? (
-                <p className="notification-menu-state notification-menu-error">{notificationsError}</p>
+                <p className="notification-menu-state notification-menu-error">
+                  {notificationsError}
+                </p>
               ) : unreadCount === 0 ? (
                 <p className="notification-menu-state">No notifications right now.</p>
               ) : (
@@ -152,20 +180,26 @@ const Header = ({
                               : ""
                           }`}
                         >
+                          <span className="notification-type-icon">
+                            {getNotificationIcon(notification)}
+                          </span>
                           {notification.notificationType === "achievement"
                             ? "Achievement"
                             : notification.subject.type}
                         </span>
+
                         <button
                           type="button"
                           className="notification-remove"
                           onClick={() => onRemoveNotification(notification.id)}
                           aria-label={`Remove notification: ${notification.subject.title}`}
                         >
-                          Remove
+                          <X size={14} />
                         </button>
                       </div>
+
                       <p className="notification-title">{notification.subject.title}</p>
+
                       <div className="notification-meta">
                         <span>
                           {notification.notificationType === "achievement"
@@ -186,69 +220,74 @@ const Header = ({
           )}
         </div>
 
-        <div className="user-info">
-          <div 
-            className="user-profile-trigger"
-            onClick={() => setIsProfileOpen(!isProfileOpen)}
+        <div className="user-info" ref={profileMenuRef}>
+          <button
+            type="button"
+            className={`user-profile-trigger ${isProfileOpen ? "open" : ""}`}
+            onClick={() => setIsProfileOpen((open) => !open)}
+            aria-expanded={isProfileOpen}
+            aria-label="Open profile menu"
           >
-            <img 
-              src={userInfo.avatarUrl} 
+            <img
+              src={userInfo.avatarUrl}
               alt={userInfo.displayName}
               className="user-avatar"
             />
             <span className="user-name">{userInfo.displayName}</span>
-            <span className="dropdown-arrow">▼</span>
-          </div>
-          
+            <ChevronDown size={16} className="dropdown-arrow" />
+          </button>
+
           {isProfileOpen && (
-            <>
-              <div className="dropdown-overlay" onClick={() => setIsProfileOpen(false)} />
-              <div className="dropdown-menu">
-                <div className="dropdown-header">
-                  <img 
-                    src={userInfo.avatarUrl} 
-                    alt={userInfo.displayName}
-                    className="dropdown-avatar"
-                  />
-                  <div className="dropdown-user-info">
-                    <strong>{userInfo.displayName}</strong>
-                    <span className="dropdown-github-user">@{userInfo.githubUser}</span>
-                  </div>
+            <div className="dropdown-menu">
+              <div className="dropdown-header">
+                <img
+                  src={userInfo.avatarUrl}
+                  alt={userInfo.displayName}
+                  className="dropdown-avatar"
+                />
+                <div className="dropdown-user-info">
+                  <strong>{userInfo.displayName}</strong>
+                  <span className="dropdown-github-user">@{userInfo.githubUser}</span>
                 </div>
-                <div className="dropdown-divider"></div>
-                <button 
-                  onClick={() => {
-                    setIsProfileOpen(false);
-                    onChangeDisplayName();
-                  }}
-                  className="dropdown-item"
-                >
-                  <span className="dropdown-icon">✏️</span>
-                  Change Display Name
-                </button>
-                <a
-                  href={`https://github.com/${userInfo.githubUser}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="dropdown-item"
-                  onClick={() => setIsProfileOpen(false)}
-                >
-                  <span className="dropdown-icon">🔗</span>
-                  View GitHub Profile
-                </a>
-                <div className="dropdown-divider"></div>
-                <button 
-                  onClick={() => {
-                    setIsProfileOpen(false);
-                    onLogout();
-                  }}
-                  className="dropdown-item logout-item"
-                >
-                  <span className="dropdown-icon">🚪</span>
-                  Logout
-                </button>
               </div>
-            </>
+
+              <div className="dropdown-divider" />
+
+              <button
+                onClick={() => {
+                  setIsProfileOpen(false);
+                  onChangeDisplayName();
+                }}
+                className="dropdown-item"
+              >
+                <PencilLine size={16} className="dropdown-icon" />
+                Change Display Name
+              </button>
+
+              <a
+                href={`https://github.com/${userInfo.githubUser}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="dropdown-item"
+                onClick={() => setIsProfileOpen(false)}
+              >
+                <ExternalLink size={16} className="dropdown-icon" />
+                View GitHub Profile
+              </a>
+
+              <div className="dropdown-divider" />
+
+              <button
+                onClick={() => {
+                  setIsProfileOpen(false);
+                  onLogout();
+                }}
+                className="dropdown-item logout-item"
+              >
+                <LogOut size={16} className="dropdown-icon" />
+                Logout
+              </button>
+            </div>
           )}
         </div>
       </div>

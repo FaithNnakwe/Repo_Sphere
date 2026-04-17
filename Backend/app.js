@@ -6,16 +6,20 @@ const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const { registerGitHubRoutes } = require('./GitHubService');
 const { getDisplayName, setDisplayName } = require('./displayNameStore');
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    //origin: process.env.FRONTEND_URL,
+    origin: "http://localhost:5173",
     credentials: true,
   })
 );
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Credentials", "true");
+  next();
+});
 
 app.use(cookieParser());
 app.use(express.json());
@@ -89,6 +93,14 @@ app.get('/auth/me', (req, res) => {
   res.json({ loggedIn: true, ghUser, displayName });
 });
 
+/*app.get('/auth/me', (req, res) => {
+  res.json({
+    loggedIn: true,
+    ghUser: "mumo",
+    displayName: "Mumo Musyoka"
+  });
+});
+*/
 app.post('/api/profile/display-name', (req, res) => {
   const ghUser = req.cookies.gh_user;
   if (!ghUser) {
@@ -329,6 +341,375 @@ app.post('/api/notifications/settings', (req, res) => {
     }
 });
 
+app.get('/api/github/repositories', async (req, res) => {
+  try {
+    const ghToken = req.cookies.gh_token;
+
+    if (!ghToken) {
+      return res.status(401).json({
+        error: 'Not authenticated. Please log in via GitHub.',
+      });
+    }
+
+    const { Octokit } = require('@octokit/rest');
+    const octokit = new Octokit({ auth: ghToken });
+
+    const { data } = await octokit.repos.listForAuthenticatedUser({
+      sort: 'updated',
+      per_page: 100,
+      affiliation: 'owner,collaborator,organization_member',
+      headers: {
+        'X-GitHub-Api-Version': '2026-03-10',
+      },
+    });
+
+    const repositories = data.map((repo) => ({
+      id: repo.id,
+      name: repo.name,
+      fullName: repo.full_name,
+      private: repo.private,
+      defaultBranch: repo.default_branch,
+      owner: {
+        login: repo.owner?.login ?? '',
+        avatarUrl: repo.owner?.avatar_url ?? '',
+      },
+    }));
+
+    res.json(repositories);
+  } catch (error) {
+    console.error('Error fetching repositories:', error);
+    const status = error?.status || 500;
+    res.status(status).json({
+      error: error?.message || 'Failed to fetch repositories',
+    });
+  }
+});
+app.get('/api/github/reports/analytics', async (req, res) => {
+  try {
+    const { repo, days = 30, branch } = req.query;
+    const ghToken = req.cookies.gh_token;
+
+    if (!ghToken) {
+      return res.status(401).json({
+        error: 'Not authenticated. Please log in via GitHub.',
+      });
+    }
+
+    if (!repo || typeof repo !== 'string' || !repo.includes('/')) {
+      return res.status(400).json({
+        error: 'A valid repo query like owner/name is required.',
+      });
+    }
+
+    const [owner, repoName] = repo.split('/');
+    const { Octokit } = require('@octokit/rest');
+    const octokit = new Octokit({ auth: ghToken });
+
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - Number(days));
+
+    const selectedBranch =
+      typeof branch === 'string' && branch.trim().length > 0
+        ? branch
+        : undefined;
+
+    const commitsResponse = await octokit.repos.listCommits({
+      owner,
+      repo: repoName,
+      sha: selectedBranch,
+      since: sinceDate.toISOString(),
+      per_page: 100,
+      headers: {
+        'X-GitHub-Api-Version': '2026-03-10',
+      },
+    });
+
+    const pullsResponse = await octokit.pulls.list({
+      owner,
+      repo: repoName,
+      state: 'all',
+      sort: 'updated',
+      direction: 'desc',
+      per_page: 100,
+      headers: {
+        'X-GitHub-Api-Version': '2026-03-10',
+      },
+    });
+
+    const issuesResponse = await octokit.issues.listForRepo({
+      owner,
+      repo: repoName,
+      state: 'all',
+      since: sinceDate.toISOString(),
+      per_page: 100,
+      headers: {
+        'X-GitHub-Api-Version': '2026-03-10',
+      },
+    });
+
+    const repoResponse = await octokit.repos.get({
+      owner,
+      repo: repoName,
+      headers: {
+        'X-GitHub-Api-Version': '2026-03-10',
+      },
+    });
+
+    const commits = commitsResponse.data;
+    const pulls = pullsResponse.data;
+    const issues = issuesResponse.data.filter((item) => !item.pull_request);
+
+    const filteredPulls = pulls.filter((pr) => {
+      const updatedAt = new Date(pr.updated_at);
+      return updatedAt >= sinceDate;
+    });
+
+    const activeContributors = new Set(
+      commits
+        .map((commit) => commit.author?.login || commit.commit?.author?.name)
+        .filter(Boolean)
+    ).size;
+
+    const weekMap = new Map();
+    const issueWeekMap = new Map();
+
+    for (let i = 0; i < 4; i += 1) {
+      const label = `Week ${i + 1}`;
+      weekMap.set(label, 0);
+      issueWeekMap.set(label, { week: label, opened: 0, closed: 0 });
+    }
+
+    const getWeekLabel = (dateString) => {
+      const date = new Date(dateString);
+      const diffDays = Math.max(
+        0,
+        Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24))
+      );
+      const weekIndex = Math.min(3, Math.floor(diffDays / 7));
+      return `Week ${4 - weekIndex}`;
+    };
+
+    commits.forEach((commit) => {
+      const commitDate = commit.commit?.author?.date;
+      if (!commitDate) return;
+      const label = getWeekLabel(commitDate);
+      weekMap.set(label, (weekMap.get(label) || 0) + 1);
+    });
+
+    issues.forEach((issue) => {
+      if (issue.created_at) {
+        const label = getWeekLabel(issue.created_at);
+        const entry = issueWeekMap.get(label);
+        if (entry) entry.opened += 1;
+      }
+
+      if (issue.closed_at) {
+        const closedDate = new Date(issue.closed_at);
+        if (closedDate >= sinceDate) {
+          const label = getWeekLabel(issue.closed_at);
+          const entry = issueWeekMap.get(label);
+          if (entry) entry.closed += 1;
+        }
+      }
+    });
+
+    const commitActivity = Array.from(weekMap.entries()).map(([week, count]) => ({
+      week,
+      commits: count,
+    }));
+
+    const issueOverview = Array.from(issueWeekMap.values());
+
+    const mergedPRs = filteredPulls.filter((pr) => pr.merged_at).length;
+    const openPRs = filteredPulls.filter((pr) => pr.state === 'open').length;
+    const closedPRs = filteredPulls.filter(
+      (pr) => pr.state === 'closed' && !pr.merged_at
+    ).length;
+
+    const defaultBranch = repoResponse.data.default_branch;
+
+    let codeCoverage = 0;
+    if (
+      selectedBranch &&
+      defaultBranch &&
+      selectedBranch !== defaultBranch
+    ) {
+      try {
+        const compareResponse = await octokit.repos.compareCommitsWithBasehead({
+          owner,
+          repo: repoName,
+          basehead: `${defaultBranch}...${selectedBranch}`,
+          headers: {
+            'X-GitHub-Api-Version': '2026-03-10',
+          },
+        });
+
+        const aheadBy = compareResponse.data.ahead_by || 0;
+        const behindBy = compareResponse.data.behind_by || 0;
+        const total = aheadBy + behindBy;
+        codeCoverage =
+          total === 0 ? 100 : Math.max(0, Math.round((aheadBy / total) * 100));
+      } catch {
+        codeCoverage = 0;
+      }
+    }
+
+    res.json({
+      summary: {
+        totalCommits: commits.length,
+        commitGrowth: '+0%',
+        pullRequests: filteredPulls.length,
+        pullRequestGrowth: '+0%',
+        activeContributors,
+        contributorGrowth: '+0%',
+        codeCoverage,
+        coverageGrowth: '+0%',
+      },
+      commitActivity,
+      pullRequestBreakdown: {
+        merged: mergedPRs,
+        open: openPRs,
+        closed: closedPRs,
+      },
+      issueOverview,
+    });
+  } catch (error) {
+    console.error('Error fetching GitHub analytics:', error);
+    const status = error?.status || 500;
+    res.status(status).json({
+      error: error?.message || 'Failed to fetch repository analytics',
+    });
+  }
+});
+
+app.get('/api/github/reports/modifications', async (req, res) => {
+  try {
+    const { repo, days = 30, branch } = req.query;
+    const ghToken = req.cookies.gh_token;
+
+    if (!ghToken) {
+      return res.status(401).json({
+        error: 'Not authenticated. Please log in via GitHub.',
+      });
+    }
+
+    if (!repo || typeof repo !== 'string' || !repo.includes('/')) {
+      return res.status(400).json({
+        error: 'A valid repo query like owner/name is required.',
+      });
+    }
+
+    const [owner, repoName] = repo.split('/');
+    const { Octokit } = require('@octokit/rest');
+    const octokit = new Octokit({ auth: ghToken });
+
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - Number(days));
+
+    const selectedBranch =
+      typeof branch === 'string' && branch.trim().length > 0
+        ? branch
+        : undefined;
+
+    const commitsResponse = await octokit.repos.listCommits({
+      owner,
+      repo: repoName,
+      sha: selectedBranch,
+      since: sinceDate.toISOString(),
+      per_page: 30,
+      headers: {
+        'X-GitHub-Api-Version': '2026-03-10',
+      },
+    });
+
+    const commits = commitsResponse.data;
+
+    const rows = await Promise.all(
+      commits.slice(0, 15).map(async (commit) => {
+        const fullCommit = await octokit.repos.getCommit({
+          owner,
+          repo: repoName,
+          ref: commit.sha,
+          headers: {
+            'X-GitHub-Api-Version': '2026-03-10',
+          },
+        });
+
+        const files = fullCommit.data.files || [];
+        const authorName =
+          commit.author?.login ||
+          commit.commit?.author?.name ||
+          'Unknown contributor';
+
+        const commitDate = commit.commit?.author?.date
+          ? new Date(commit.commit.author.date)
+          : null;
+
+        return {
+          date: commitDate
+            ? commitDate.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })
+            : 'Unknown date',
+          contributor: authorName,
+          filesChanged: files.length,
+          additions: files.reduce((sum, file) => sum + (file.additions || 0), 0),
+          deletions: files.reduce((sum, file) => sum + (file.deletions || 0), 0),
+        };
+      })
+    );
+
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching code modification log:', error);
+    const status = error?.status || 500;
+    res.status(status).json({
+      error: error?.message || 'Failed to fetch code modification log',
+    });
+  }
+});
+app.get('/api/github/reports/branches', async (req, res) => {
+  try {
+    const { repo } = req.query;
+    const ghToken = req.cookies.gh_token;
+
+    if (!ghToken) {
+      return res.status(401).json({
+        error: 'Not authenticated. Please log in via GitHub.',
+      });
+    }
+
+    if (!repo || typeof repo !== 'string' || !repo.includes('/')) {
+      return res.status(400).json({
+        error: 'A valid repo query like owner/name is required.',
+      });
+    }
+
+    const { Octokit } = require('@octokit/rest');
+    const octokit = new Octokit({ auth: ghToken });
+
+    const [owner, repoName] = repo.split('/');
+
+    const { data } = await octokit.repos.listBranches({
+      owner,
+      repo: repoName,
+      per_page: 100,
+      headers: {
+        'X-GitHub-Api-Version': '2026-03-10',
+      },
+    });
+
+    res.json(data.map((branch) => ({ name: branch.name })));
+  } catch (error) {
+    console.error('Error fetching branches:', error);
+    const status = error?.status || 500;
+    res.status(status).json({
+      error: error?.message || 'Failed to fetch branches',
+    });
+  }
+});
 app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
 
