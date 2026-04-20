@@ -25,7 +25,7 @@ interface TeamContributionApiResponse { members: TeamContributionApiMember[]; to
 interface TeamMemberViewModel { name: string; commits: number; pullRequests: number; issues: number; percentage: number; }
 interface UserInfo { displayName: string; githubUser: string; avatarUrl: string; isLoggedIn: boolean; }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+const API_BASE_URL = import.meta.env.VITE_FRONTEND_URL ??" ";
 const DASHBOARD_NOTIFICATIONS_KEY = "dashboardNotifications";
 const DASHBOARD_DISMISSED_NOTIFICATIONS_KEY = "dashboardDismissedNotifications";
 const DASHBOARD_UNLOCKED_ACHIEVEMENTS_KEY = "dashboardUnlockedAchievements";
@@ -526,8 +526,8 @@ if (locRes.ok) {
   { icon: GitCommit,      label: "Total Number of Commits", value: commitCount,     change: "+12%", color: "#D85A30" },
   { icon: GitPullRequest, label: "Total Pull Requests",     value: pullRequestCount, change: "+8%",  color: "#BA7517" },
   { icon: AlertCircle,    label: "Issues Opened",           value: issueCount,      change: "+5%",  color: "#BA7517" },
-  { icon: FileText,       label: "Lines of Code",           value: "N/A",           change: "+15%", color: "#888" },
-], [commitCount, pullRequestCount, issueCount]);
+  { icon: FileText,       label: "Lines of Code",           value: linesOfCode.toLocaleString(),           change: "+15%", color: "#888" },
+], [commitCount, pullRequestCount, issueCount, linesOfCode]);
   const pdfStats = useMemo(() => [
     { icon: "📊", label: "Total Number of Commits", value: commitCount },
     { icon: "🔀", label: "Total Pull Requests", value: pullRequestCount },
@@ -587,7 +587,7 @@ if (locRes.ok) {
               isGeneratingReport={isGeneratingReport}
               activeTab={activeTab}
               onTabChange={handleTabChange}
-              repositories={repositories.map(r=>r.fullName)}
+              repositories={repositories.map(r => r.fullName)}
               selectedRepository={selectedRepository}
               onRepositoryChange={setSelectedRepository}
               stats={uiStats}
@@ -605,8 +605,7 @@ if (locRes.ok) {
               onRemoveNotification={handleRemoveNotification}
               onClearNotifications={handleClearNotifications}
               isSidebarCollapsed={isSidebarCollapsed}
-              onSidebarToggle={handleSidebarToggle}
-            />
+              onSidebarToggle={handleSidebarToggle} issueCount={0}            />
             {activeCelebrationMilestone !== null && (
               <AchievementCelebration
                 milestone={activeCelebrationMilestone}
