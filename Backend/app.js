@@ -329,6 +329,169 @@ app.post('/api/notifications/settings', (req, res) => {
     }
 });
 
+// ============================================
+// METRICS API ENDPOINTS
+// ============================================
+
+const getOctokit = (req) => {
+  const { Octokit } = require('@octokit/rest');
+  const ghToken = req.cookies.gh_token;
+  if (!ghToken) {
+    throw new Error('Not authenticated');
+  }
+  return new Octokit({ auth: ghToken });
+};
+
+
+// GET /api/metrics/:owner/:repo/lines-of-code
+app.get('/api/metrics/:owner/:repo/lines-of-code', async (req, res) => {
+  try {
+    const octokit = getOctokit(req);
+    const { owner, repo } = req.params;
+    
+    // First, get the default branch
+    const { data: repoData } = await octokit.rest.repos.get({
+      owner,
+      repo
+    });
+    
+    const defaultBranch = repoData.default_branch;
+    
+    // Get the repository contents recursively using Git Trees API
+    // This gets the entire repository structure
+    const { data: commitData } = await octokit.rest.git.getCommit({
+      owner,
+      repo,
+      commit_sha: defaultBranch
+    });
+    
+    // Get the tree recursively
+    const { data: treeData } = await octokit.rest.git.getTree({
+      owner,
+      repo,
+      tree_sha: commitData.tree.sha,
+      recursive: '1'
+    });
+    
+    let totalLines = 0;
+    let fileCount = 0;
+    const processedFiles = [];
+    
+    // Process each file in the tree
+    for (const item of treeData.tree) {
+      // Skip directories, only process files
+      if (item.type !== 'blob') continue;
+      
+      // Skip binary files and common non-code files
+      const skipExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg', 
+                              '.pdf', '.zip', '.tar', '.gz', '.exe', '.dll',
+                              '.woff', '.woff2', '.ttf', '.eot', '.mp4', '.mp3',
+                              '.lock', '.log', '.min.js', '.min.css'];
+      
+      const skipFiles = ['package-lock.json', 'yarn.lock', 'Cargo.lock', 
+                         'Gemfile.lock', 'poetry.lock', 'composer.lock'];
+      
+      const fileName = item.path.split('/').pop();
+      const extension = '.' + fileName.split('.').pop();
+      
+      if (skipExtensions.includes(extension)) continue;
+      if (skipFiles.includes(fileName)) continue;
+      
+      // Get file content to count lines
+      try {
+        const { data: fileData } = await octokit.rest.repos.getContent({
+          owner,
+          repo,
+          path: item.path,
+          ref: defaultBranch
+        });
+        
+        // Check if file is text (not binary)
+        if (fileData.content && fileData.encoding === 'base64') {
+          const content = Buffer.from(fileData.content, 'base64').toString('utf-8');
+          const lines = content.split('\n').length;
+          
+          // Only count code files with reasonable line counts
+          if (lines > 0 && lines < 50000) { // Skip huge files
+            totalLines += lines;
+            fileCount++;
+            processedFiles.push({
+              path: item.path,
+              lines
+            });
+          }
+        }
+      } catch (err) {
+        // Skip files that can't be accessed
+        console.log(`Skipping ${item.path}: ${err.message}`);
+      }
+    }
+    
+    res.json({
+      totalLines,
+      fileCount,
+      averageLinesPerFile: fileCount > 0 ? Math.round(totalLines / fileCount) : 0,
+      repository: `${owner}/${repo}`,
+      branch: defaultBranch,
+      files: processedFiles.slice(0, 100) // Return first 100 files for debugging
+    });
+    
+  } catch (error) {
+    console.error('Error fetching lines of code:', error);
+    
+    // Fallback: Use a simpler approach with code frequency data
+    try {
+      const octokit = getOctokit(req);
+      const { owner, repo } = req.params;
+      
+      // Get the last 100 commits to estimate lines of code
+      const { data: commits } = await octokit.rest.repos.listCommits({
+        owner,
+        repo,
+        per_page: 100
+      });
+      
+      let totalAdditions = 0;
+      let commitCount = 0;
+      
+      for (const commit of commits) {
+        try {
+          const { data: commitData } = await octokit.rest.repos.getCommit({
+            owner,
+            repo,
+            ref: commit.sha
+          });
+          
+          totalAdditions += commitData.stats?.additions || 0;
+          commitCount++;
+        } catch (err) {
+          console.error(`Error fetching commit ${commit.sha}:`, err);
+        }
+      }
+      
+      // Estimate total lines based on average additions per commit
+      const estimatedLines = commitCount > 0 ? Math.round(totalAdditions / commitCount) * 10 : 0;
+      
+      res.json({
+        totalLines: estimatedLines,
+        fileCount: 0,
+        averageLinesPerFile: 0,
+        repository: `${owner}/${repo}`,
+        branch: 'main',
+        estimated: true,
+        message: 'Estimated based on commit activity. For accurate count, repository may be too large.'
+      });
+      
+    } catch (fallbackError) {
+      console.error('Fallback also failed:', fallbackError);
+      res.status(500).json({ 
+        error: 'Failed to fetch lines of code',
+        totalLines: 0 
+      });
+    }
+  }
+});
+
 app.listen(PORT, async () => {
   console.log(`Server running on http://localhost:${PORT}`);
 
@@ -342,3 +505,5 @@ app.listen(PORT, async () => {
     console.error('Database connection check skipped:', err?.message || err);
   }
 });
+
+

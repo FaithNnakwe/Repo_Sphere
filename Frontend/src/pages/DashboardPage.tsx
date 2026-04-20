@@ -66,6 +66,7 @@ const DashboardPage = () => {
   const [commitCount, setCommitCount] = useState<number>(0);
   const [pullRequestCount, setPullRequestCount] = useState<number>(0);
   const [issueCount, setIssueCount] = useState<number>(0);
+  const [linesOfCode, setLinesOfCode] = useState<number>(0);
   const [currentUserCommits, setCurrentUserCommits] = useState<number>(0);
   const [currentGhUser, setCurrentGhUser] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -183,11 +184,13 @@ const DashboardPage = () => {
     const loadRepositoryMetrics = async () => {
       setIsLoading(true); setErrorMessage("");
       try {
-        const [commitsRes, pullsRes, languagesRes, teamRes] = await Promise.all([
+        const [commitsRes, pullsRes, languagesRes, teamRes, locRes] = await Promise.all([
           fetch(buildApiUrl(`/api/repos/${owner}/${repo}/commits`), { credentials: "include" }),
           fetch(buildApiUrl(`/api/repos/${owner}/${repo}/pulls`), { credentials: "include" }),
           fetch(buildApiUrl(`/api/repos/${owner}/${repo}/languages`), { credentials: "include" }),
           fetch(buildApiUrl(`/api/repos/${owner}/${repo}/team-contributions`), { credentials: "include" }),
+           fetch(buildApiUrl(`/api/metrics/${owner}/${repo}/lines-of-code`), { credentials: "include" }), // Add this line
+  
         ]);
 
         if (!commitsRes.ok || !pullsRes.ok) throw new Error("Unable to load metrics");
@@ -226,6 +229,14 @@ const DashboardPage = () => {
           setIssueCount(0);
           setCurrentUserCommits(0);
         }
+
+                // Add this after your other response handling
+if (locRes.ok) {
+  const locData = await locRes.json();
+  setLinesOfCode(locData.totalLines || locData.linesOfCode || 0);
+} else {
+  setLinesOfCode(0);
+}
 
         if (languagesRes.ok) {
           const langMap: Record<string, number> = await languagesRes.json();
@@ -510,8 +521,8 @@ const DashboardPage = () => {
     { icon: "📊", label: "Total Number of Commits", value: commitCount },
     { icon: "🔀", label: "Total Pull Requests", value: pullRequestCount },
     { icon: "⚠️", label: "Issues Opened", value: issueCount },
-    { icon: "📝", label: "# Lines of Code", value: "N/A" },
-  ], [commitCount, pullRequestCount, issueCount]);
+    { icon: "📝", label: "# Lines of Code", value: linesOfCode.toLocaleString() },
+  ], [commitCount, pullRequestCount, issueCount, linesOfCode]);
 
   const alertMessage = useMemo(() => {
     if (errorMessage) return errorMessage;
