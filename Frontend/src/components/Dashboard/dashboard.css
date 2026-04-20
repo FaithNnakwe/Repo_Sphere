@@ -1,22 +1,25 @@
 .dashboard-container {
+  --sidebar-width: 250px;
+  --sidebar-collapsed-width: 84px;
+
   display: flex;
   min-height: 100vh;
   background-color: var(--color-white);
 }
 
 .dashboard-main {
-  margin-left: 250px;
+  margin-left: var(--sidebar-width);
   flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  width: calc(100% - 250px);
+  width: calc(100% - var(--sidebar-width));
+  transition: margin-left 0.3s ease, width 0.3s ease;
 }
 
-/* When sidebar is collapsed, expand the main content */
 .dashboard-main.sidebar-collapsed {
-  margin-left: 0;
-  width: 100%;
+  margin-left: var(--sidebar-collapsed-width);
+  width: calc(100% - var(--sidebar-collapsed-width));
 }
 
 .dashboard-content {
@@ -24,12 +27,18 @@
   padding: 34px 36px;
   max-width: 1400px;
   width: 100%;
+  box-sizing: border-box;
   transition: padding 0.3s ease;
 }
 
-/* Adjust content padding when sidebar is collapsed */
 .dashboard-main.sidebar-collapsed .dashboard-content {
-  padding-left: 20px; /* Adjust as needed */
+  padding-left: 28px;
+  padding-right: 28px;
+}
+
+.content-header,
+#report-content {
+  transition: transform 0.3s ease;
 }
 
 .content-header {
@@ -40,7 +49,7 @@
   margin: 0 0 10px 0;
   font-size: 3.5rem;
   font-weight: 700;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: Georgia, "Times New Roman", serif;
   line-height: 1.05;
   letter-spacing: -0.4px;
   color: var(--color-black);
@@ -49,15 +58,20 @@
 .content-header p {
   margin: 0;
   font-size: 1.75rem;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: Georgia, "Times New Roman", serif;
   line-height: 1.15;
   color: var(--color-muted);
 }
 
-/* Responsive Design */
 @media (max-width: 1024px) {
   .dashboard-main {
-    margin-left: 250px;
+    margin-left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+  }
+
+  .dashboard-main.sidebar-collapsed {
+    margin-left: var(--sidebar-collapsed-width);
+    width: calc(100% - var(--sidebar-collapsed-width));
   }
 
   .dashboard-content {
@@ -70,8 +84,10 @@
     flex-direction: column;
   }
 
-  .dashboard-main {
+  .dashboard-main,
+  .dashboard-main.sidebar-collapsed {
     margin-left: 0;
+    width: 100%;
   }
 
   .content-header h1 {
@@ -82,7 +98,8 @@
     font-size: 1.375rem;
   }
 
-  .dashboard-content {
+  .dashboard-content,
+  .dashboard-main.sidebar-collapsed .dashboard-content {
     padding: 15px;
   }
 }

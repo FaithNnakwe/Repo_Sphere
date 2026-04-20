@@ -12,6 +12,7 @@ import {
   type DashboardNotification,
   type NotificationSettings,
 } from "../api";
+import {GitCommit,GitPullRequest,AlertCircle,FileText,Star} from "lucide-react";
 
 // --- Interfaces ---
 interface RepoApiResponse { name: string; url: string; description: string | null; }
@@ -484,40 +485,50 @@ if (locRes.ok) {
   };
   
   const handleTabChange = (tab: string) => setActiveTab(tab);
-  const handleSidebarToggle = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+ const handleSidebarToggle = () => {
+  setIsSidebarCollapsed((prev) => !prev);
+};
+
 
   const handleGenerateReport = async () => {
-    if (!selectedRepository) return setErrorMessage("Please select a repository first");
-    setIsGeneratingReport(true); setErrorMessage("");
-    try {
-      const stats = [
-        { icon: "📊", label: "Total Number of Commits", value: commitCount },
-        { icon: "🔀", label: "Total Pull Requests", value: pullRequestCount },
-        { icon: "⚠️", label: "Issues Opened", value: issueCount },
-        { icon: "📝", label: "# Lines of Code", value: "N/A" },
-      ];
-      const latestCommitMessage = commits[0]?.message || "No commits available";
-      const reportData = { 
-        repository: selectedRepository, 
-        date: new Date().toLocaleString(), 
-        stats, 
-        teamMembers, 
-        languages, 
-        commitCount, 
-        pullRequestCount, 
-        latestCommitMessage 
-      };
-      await generatePDFReport("report-content", reportData);
-      toast.success("Report generated successfully!");
-    } catch { 
-      setErrorMessage("Failed to generate PDF report");
-      toast.error("Failed to generate report");
-    } finally { 
-      setIsGeneratingReport(false); 
-    }
-  };
+  if (!selectedRepository) {
+    setErrorMessage("Please select a repository first");
+    return;
+  }
 
-  const stats = useMemo(() => [
+  setIsGeneratingReport(true);
+  setErrorMessage("");
+
+  try {
+    const latestCommitMessage = commits[0]?.message || "No commits available";
+
+    const reportData = {
+      repository: selectedRepository,
+      date: new Date().toLocaleString(),
+      stats: pdfStats,
+      teamMembers,
+      languages,
+      commitCount,
+      pullRequestCount,
+      latestCommitMessage,
+    };
+
+    await generatePDFReport("report-content", reportData);
+    toast.success("Report generated successfully!");
+  } catch {
+    setErrorMessage("Failed to generate PDF report");
+    toast.error("Failed to generate report");
+  } finally {
+    setIsGeneratingReport(false);
+  }
+};
+  const uiStats = useMemo(() => [
+  { icon: GitCommit,      label: "Total Number of Commits", value: commitCount,     change: "+12%", color: "#D85A30" },
+  { icon: GitPullRequest, label: "Total Pull Requests",     value: pullRequestCount, change: "+8%",  color: "#BA7517" },
+  { icon: AlertCircle,    label: "Issues Opened",           value: issueCount,      change: "+5%",  color: "#BA7517" },
+  { icon: FileText,       label: "Lines of Code",           value: "N/A",           change: "+15%", color: "#888" },
+], [commitCount, pullRequestCount, issueCount]);
+  const pdfStats = useMemo(() => [
     { icon: "📊", label: "Total Number of Commits", value: commitCount },
     { icon: "🔀", label: "Total Pull Requests", value: pullRequestCount },
     { icon: "⚠️", label: "Issues Opened", value: issueCount },
@@ -579,9 +590,9 @@ if (locRes.ok) {
               repositories={repositories.map(r=>r.fullName)}
               selectedRepository={selectedRepository}
               onRepositoryChange={setSelectedRepository}
-              stats={stats}
+              stats={uiStats}
               alertMessage={alertMessage}
-              alertIcon={errorMessage ? "⚠️" : "⭐"}
+              alertIcon={errorMessage ? AlertCircle : Star}
               isLoading={isLoading}
               teamMembers={teamMembers}
               commitCount={commitCount}

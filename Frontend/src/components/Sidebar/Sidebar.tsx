@@ -1,107 +1,144 @@
+import type { ElementType } from "react";
 import { Link, useLocation } from "react-router-dom";
+import {
+  LayoutDashboard,
+  BarChart3,
+  Download,
+  Settings,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import "./sidebar.css";
 
 interface SidebarProps {
-  onTabChange?: (tab: string) => void;
   onGenerateReport?: () => void;
   isGeneratingReport?: boolean;
-  isCollapsed?: boolean;  // ADD THIS LINE
-  onToggleCollapse?: () => void;  // ADD THIS LINE
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-const Sidebar = ({ 
-  onTabChange, 
+interface MenuItem {
+  label: string;
+  icon: ElementType;
+  path?: string;
+  accentClass: string;
+  action?: "report";
+}
+
+const Sidebar = ({
   onGenerateReport,
-  isGeneratingReport = false, 
-  isCollapsed = false,  // ADD THIS LINE
-  onToggleCollapse      // ADD THIS LINE
+  isGeneratingReport = false,
+  isCollapsed = false,
+  onToggleCollapse,
 }: SidebarProps) => {
   const location = useLocation();
 
-  const toggleSidebar = () => {
-    if (onToggleCollapse) {
-      onToggleCollapse();  // Call the parent's toggle function
-    }
-  };
-
-  const menuItems = [
-    { label: "Dashboard", icon: "📊", path: "/", accentClass: "nav-item-dashboard" },
-    { label: "GitHub Metrics", icon: "📈", path: "/github-metrics", accentClass: "nav-item-metrics" },
-    { label: "Download Report", icon: "⬇️", action: "report", path: "#", accentClass: "nav-item-reports" },
-    { label: "Settings", icon: "⚙️", path: "/settings", accentClass: "nav-item-settings" }
+  const menuItems: MenuItem[] = [
+    {
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      path: "/",
+      accentClass: "nav-item-dashboard",
+    },
+    {
+      label: "GitHub Metrics",
+      icon: BarChart3,
+      path: "/reports",
+      accentClass: "nav-item-metrics",
+    },
+    {
+      label: "Download Report",
+      icon: Download,
+      action: "report",
+      accentClass: "nav-item-reports",
+    },
+    {
+      label: "Settings",
+      icon: Settings,
+      path: "/settings",
+      accentClass: "nav-item-settings",
+    },
   ];
 
-  const handleItemClick = (item: any) => {
-    if (item.action === "report" && onGenerateReport) {
-      onGenerateReport();
-    } else if (onTabChange && item.path !== "#") {
-      onTabChange(item.label);
-    }
-  };
-
-  // Check if the current path matches the item's path
-  const isActive = (item: any) => {
-    if (item.path === "#") return false;
-    if (item.path === "/") {
-      return location.pathname === "/";
-    }
+  const isActive = (item: MenuItem) => {
+    if (!item.path) return false;
+    if (item.path === "/") return location.pathname === "/";
     return location.pathname === item.path;
   };
 
   return (
-    <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
-      <button 
-        className="sidebar-toggle" 
-        onClick={toggleSidebar}
+    <aside className={`sidebar ${isCollapsed ? "collapsed" : ""}`}>
+      <button
+        type="button"
+        className="sidebar-toggle"
+        onClick={onToggleCollapse}
         aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
-        {isCollapsed ? "→" : "←"}
+        {isCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
       </button>
 
       <div className="sidebar-header">
-        {!isCollapsed && (
-          <img className="brand-image" src="/Logo.png" alt="Repo Sphere" />
-        )}
-        {isCollapsed && (
-          <div className="brand-icon">📊</div>
-        )}
+        <img
+          className={`brand-image ${isCollapsed ? "collapsed" : ""}`}
+          src="/Logo2.png"
+          alt="Repo Sphere"
+        />
       </div>
 
       <nav className="sidebar-nav">
-        {menuItems.map((item, index) => (
-          item.action === "report" ? (
-            <button 
-              key={index}
-              className={`nav-item ${item.accentClass} ${isGeneratingReport ? 'loading' : ''}`}
-              onClick={() => handleItemClick(item)}
-              disabled={isGeneratingReport}
-              aria-label={isCollapsed ? item.label : "Generate report"}
-              title={isCollapsed ? item.label : ""}
-            >
-              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
-              {!isCollapsed && (
-                <span className="nav-label">
-                  {isGeneratingReport ? "Generating..." : item.label}
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(item);
+
+          if (item.action === "report") {
+            return (
+              <button
+                key={item.label}
+                type="button"
+                className={`nav-item ${item.accentClass} ${
+                  isGeneratingReport ? "loading" : ""
+                }`}
+                onClick={onGenerateReport}
+                disabled={isGeneratingReport}
+                aria-label={item.label}
+                title={isCollapsed ? item.label : undefined}
+              >
+                <span className="nav-main">
+                  <span className="nav-icon" aria-hidden="true">
+                    <Icon size={20} strokeWidth={2} />
+                  </span>
+                  {!isCollapsed && (
+                    <span className="nav-label">
+                      {isGeneratingReport ? "Generating..." : item.label}
+                    </span>
+                  )}
                 </span>
-              )}
-              {isActive(item) && <span className="nav-active-indicator" aria-hidden="true" />}
-            </button>
-          ) : (
-            <Link 
-              key={index} 
-              to={item.path} 
-              className={`nav-item ${item.accentClass} ${isActive(item) ? 'active' : ''}`}
-              onClick={() => handleItemClick(item)}
-              aria-label={isCollapsed ? item.label : `Go to ${item.label}`}
-              title={isCollapsed ? item.label : ""}
+              </button>
+            );
+          }
+
+          return (
+            <Link
+              key={item.label}
+              to={item.path!}
+              className={`nav-item ${item.accentClass} ${active ? "active" : ""}`}
+              aria-label={item.label}
+              title={isCollapsed ? item.label : undefined}
             >
-              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
-              {!isCollapsed && <span className="nav-label">{item.label}</span>}
-              {isActive(item) && <span className="nav-active-indicator" aria-hidden="true" />}
+              <span className="nav-main">
+                <span className="nav-icon" aria-hidden="true">
+                  <Icon size={20} strokeWidth={2} />
+                </span>
+                {!isCollapsed && <span className="nav-label">{item.label}</span>}
+              </span>
+
+              {!isCollapsed && active && (
+                <span className="nav-active-indicator" aria-hidden="true" />
+              )}
             </Link>
-          )
-        ))}
+          );
+        })}
       </nav>
 
       {!isCollapsed && (
@@ -109,7 +146,7 @@ const Sidebar = ({
           <p>v1.0.0</p>
         </div>
       )}
-    </div>
+    </aside>
   );
 };
 

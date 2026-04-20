@@ -1,4 +1,3 @@
-// Dashboard.tsx
 import "./dashboard.css";
 import Sidebar from "../Sidebar/Sidebar";
 import Header from "../Header/Header";
@@ -9,18 +8,21 @@ import TeamContribution from "../TeamContribution/TeamContribution";
 import LanguagesChart from "../Charts/LanguagesChart";
 import type { DashboardNotification } from "../../api";
 import { useLocation } from "react-router-dom";
+import type { ElementType } from "react";
+
 
 interface DashboardProps {
   repositories: string[];
+  issueCount: number;
   selectedRepository: string;
   onRepositoryChange: (repository: string) => void;
   stats: Array<{
-    icon: string;
+    icon: ElementType;
     label: string;
     value: string | number;
   }>;
   alertMessage: string;
-  alertIcon: string;
+  alertIcon: ElementType;
   isLoading: boolean;
   teamMembers: Array<{
     name: string;
@@ -52,10 +54,11 @@ interface DashboardProps {
   isGeneratingReport?: boolean;
   onTabChange?: (tab: string) => void;
   activeTab?: string;
-  // ADD THESE TWO LINES:
   isSidebarCollapsed?: boolean;
   onSidebarToggle?: () => void;
 }
+
+
 
 const Dashboard = ({
   repositories,
@@ -65,6 +68,7 @@ const Dashboard = ({
   alertMessage,
   alertIcon,
   isLoading,
+  issueCount,
   teamMembers,
   commitCount,
   pullRequestCount,
@@ -145,6 +149,7 @@ const Dashboard = ({
               repository={selectedRepository}
               commitCount={commitCount}
               pullRequestCount={pullRequestCount}
+              issueCount={issueCount}
               latestCommitMessage={latestCommitMessage}
             />
             
