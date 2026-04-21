@@ -24,6 +24,10 @@ import CodeModifications from "./Tabs/codeModifications";
 
 import "./Reports.css";
 
+// Add this import at the top
+import { toast } from "react-toastify";
+import { generatePDFReport } from "../../utils/pdfGenerator";
+
 const DATE_FILTERS = [
   { label: "Last 7 Days", value: "7" },
   { label: "Last 30 Days", value: "30" },
@@ -41,6 +45,7 @@ type UserInfo = {
 
 export default function Reports() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   const [userInfo, setUserInfo] = useState<UserInfo>({
     displayName: "",
@@ -79,6 +84,44 @@ export default function Reports() {
   const handleChangeDisplayName = () => {
     localStorage.removeItem("displayName");
     window.location.href = "/setup-profile";
+  };
+
+   // ✅ Fixed handleGenerateReport to work with your existing pdfGenerator
+  const handleGenerateReport = async () => {
+    if (!selectedRepo || !analytics) {
+      toast.error("No data available to generate report");
+      return;
+    }
+
+    setIsGeneratingReport(true);
+    
+    try {
+      // Prepare report data matching the ReportData interface from pdfGenerator
+      const reportData = {
+        repository: selectedRepo,
+        date: new Date().toLocaleString(),
+        stats: [
+          { icon: "📊", label: "Total Commits", value: analytics.summary.totalCommits },
+          { icon: "🔀", label: "Pull Requests", value: analytics.summary.pullRequests },
+          { icon: "👥", label: "Active Contributors", value: analytics.summary.activeContributors },
+          { icon: "📝", label: "Code Coverage", value: `${analytics.summary.codeCoverage}%` },
+        ],
+        teamMembers: [], // You can add team members data if available
+        languages: [], // You can add languages data if available
+        commitCount: analytics.summary.totalCommits,
+        pullRequestCount: analytics.summary.pullRequests,
+        latestCommitMessage: "No commit message available",
+      };
+      
+      // ✅ Correct function signature: (elementId, reportData, fileName)
+      await generatePDFReport('reports-content', reportData);
+      toast.success("Report generated successfully!");
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast.error("Failed to generate report");
+    } finally {
+      setIsGeneratingReport(false);
+    }
   };
 
   useEffect(() => {
@@ -230,8 +273,8 @@ return (
     <Sidebar
       isCollapsed={isSidebarCollapsed}
       onToggleCollapse={handleSidebarToggle}
-      onGenerateReport={() => console.log("Generate report clicked")}
-      isGeneratingReport={false}
+      onGenerateReport={handleGenerateReport}
+      isGeneratingReport={isGeneratingReport}
     />
 
     <main className={`reports-main ${isSidebarCollapsed ? "sidebar-collapsed" : ""}`}>
@@ -250,7 +293,7 @@ return (
         onClearNotifications={() => {}}
       />
 
-      <div className="reports-content">
+      <div id="reports-content" className="reports-content">
         <ReportsHeader />
 
         <BranchTab

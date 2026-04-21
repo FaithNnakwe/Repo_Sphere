@@ -108,7 +108,8 @@ const registerGitHubRoutes = (app) => {
     try {
       const { data } = await octokit.rest.repos.listForAuthenticatedUser({
         sort: 'updated',
-        per_page: 10,
+        per_page: 100,
+        affiliation: 'owner,collaborator,organization_member',  // ← Add this line
       });
 
       res.json(

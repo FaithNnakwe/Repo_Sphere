@@ -551,7 +551,7 @@ if (locRes.ok) {
         return (
           <div className="dashboard-container">
             <Sidebar 
-  
+      
               onGenerateReport={handleGenerateReport} 
               isGeneratingReport={isGeneratingReport}
               isCollapsed={isSidebarCollapsed}
