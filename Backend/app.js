@@ -93,14 +93,6 @@ app.get('/auth/me', (req, res) => {
   res.json({ loggedIn: true, ghUser, displayName });
 });
 
-/*app.get('/auth/me', (req, res) => {
-  res.json({
-    loggedIn: true,
-    ghUser: "mumo",
-    displayName: "Mumo Musyoka"
-  });
-});
-*/
 app.post('/api/profile/display-name', (req, res) => {
   const ghUser = req.cookies.gh_user;
   if (!ghUser) {
