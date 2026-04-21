@@ -86,9 +86,14 @@
 .reports-select {
   border: 1px solid var(--color-border);
   padding: 8px 10px;
-  background: var(--color-white);
+  background: var(--color-input-bg);
+  color: var(--color-text-body);  /* Use existing variable */
+  border-color: var(--color-input-border);/* Added - explicit text color */
   font-size: 0.9rem;
+  border-radius: 6px;                     /* Optional: adds polish */
+  cursor: pointer;
 }
+
 
 /* ─── Metric Cards ───────────────────────── */
 
@@ -413,14 +418,14 @@
   align-items: center;
   gap: 10px;
   border: 1px solid var(--color-border);
-  background: var(--color-white);
+  background: var(--color-input-bg);
   padding: 0 12px;
   min-height: 46px;
 }
 
 .reports-filter-input-wrap .reports-select {
   border: none;
-  background: transparent;
+ background: var(--color-input-bg);  /* ← Use the variable instead */
   width: 100%;
   padding: 12px 0;
   outline: none;

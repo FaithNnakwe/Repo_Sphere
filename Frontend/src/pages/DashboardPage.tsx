@@ -551,7 +551,7 @@ if (locRes.ok) {
         return (
           <div className="dashboard-container">
             <Sidebar 
-              onTabChange={handleTabChange} 
+  
               onGenerateReport={handleGenerateReport} 
               isGeneratingReport={isGeneratingReport}
               isCollapsed={isSidebarCollapsed}
