@@ -23,8 +23,6 @@ import BranchTab from "./Tabs/Branch";
 import CodeModifications from "./Tabs/codeModifications";
 
 import "./Reports.css";
-
-// Add this import at the top
 import { toast } from "react-toastify";
 import { generatePDFReport } from "../../utils/pdfGenerator";
 
@@ -86,7 +84,6 @@ export default function Reports() {
     window.location.href = "/setup-profile";
   };
 
-   // ✅ Fixed handleGenerateReport to work with your existing pdfGenerator
   const handleGenerateReport = async () => {
     if (!selectedRepo || !analytics) {
       toast.error("No data available to generate report");
@@ -96,9 +93,8 @@ export default function Reports() {
     setIsGeneratingReport(true);
     
     try {
-      // Prepare report data matching the ReportData interface from pdfGenerator
       const reportData = {
-        repository: selectedRepo,
+        repository: `${selectedRepo} (${selectedBranch})`,
         date: new Date().toLocaleString(),
         stats: [
           { icon: "📊", label: "Total Commits", value: analytics.summary.totalCommits },
@@ -106,14 +102,13 @@ export default function Reports() {
           { icon: "👥", label: "Active Contributors", value: analytics.summary.activeContributors },
           { icon: "📝", label: "Code Coverage", value: `${analytics.summary.codeCoverage}%` },
         ],
-        teamMembers: [], // You can add team members data if available
-        languages: [], // You can add languages data if available
+        teamMembers: [],
+        languages: [],
         commitCount: analytics.summary.totalCommits,
         pullRequestCount: analytics.summary.pullRequests,
         latestCommitMessage: "No commit message available",
       };
       
-      // ✅ Correct function signature: (elementId, reportData, fileName)
       await generatePDFReport('reports-content', reportData);
       toast.success("Report generated successfully!");
     } catch (error) {
@@ -188,6 +183,7 @@ export default function Reports() {
     localStorage.setItem(SELECTED_REPOSITORY_KEY, selectedRepo);
   }, [selectedRepo]);
 
+  // Load branches when repository changes
   useEffect(() => {
     const [owner, repo] = selectedRepo.split("/");
     if (!owner || !repo) return;
@@ -198,12 +194,17 @@ export default function Reports() {
         const branchList = await getRepoBranches(owner, repo);
         setBranches(branchList);
 
-        if (branchList.some((b) => b.name === "main")) {
-          setSelectedBranch("main");
-        } else if (branchList.some((b) => b.name === "master")) {
-          setSelectedBranch("master");
-        } else if (branchList[0]) {
-          setSelectedBranch(branchList[0].name);
+        // Set default branch if current selected branch doesn't exist
+        const branchExists = branchList.some((b) => b.name === selectedBranch);
+        
+        if (!branchExists && branchList.length > 0) {
+          // Try to find main, then master, then first available
+          const defaultBranch = branchList.find(b => b.name === "main") ||
+                                branchList.find(b => b.name === "master") ||
+                                branchList[0];
+          if (defaultBranch) {
+            setSelectedBranch(defaultBranch.name);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -214,16 +215,23 @@ export default function Reports() {
     };
 
     void loadBranches();
-  }, [selectedRepo]);
+  }, [selectedRepo]); // Only depend on selectedRepo, not selectedBranch
 
+  // FIXED: Load analytics when repo, branch, or date filter changes
   useEffect(() => {
-    if (!selectedRepo) return;
+    if (!selectedRepo || !selectedBranch) return;
 
     const loadAnalytics = async () => {
       try {
         setAnalyticsLoading(true);
         setError("");
-        const data = await getRepoAnalytics(selectedRepo, Number(dateFilter));
+        
+        // Pass the branch to the API call
+        const data = await getRepoAnalytics(
+          selectedRepo, 
+          Number(dateFilter), 
+          selectedBranch  // ← This is the key fix
+        );
         setAnalytics(data);
       } catch (err) {
         console.error(err);
@@ -235,17 +243,21 @@ export default function Reports() {
     };
 
     void loadAnalytics();
-  }, [selectedRepo, selectedBranch, dateFilter]);
+  }, [selectedRepo, selectedBranch, dateFilter]); // All dependencies included
 
+  // FIXED: Load modifications when repo, branch, or date filter changes
   useEffect(() => {
-    if (!selectedRepo) return;
+    if (!selectedRepo || !selectedBranch) return;
 
     const loadModificationLog = async () => {
       try {
         setTableLoading(true);
+        
+        // Pass the branch to the API call
         const rows = await getRepoCodeModifications(
-          selectedRepo,
-          Number(dateFilter)
+          selectedRepo, 
+          Number(dateFilter), 
+          selectedBranch  // ← This is the key fix
         );
         setModifications(rows);
       } catch (err) {
@@ -257,7 +269,7 @@ export default function Reports() {
     };
 
     void loadModificationLog();
-  }, [selectedRepo, selectedBranch, dateFilter]);
+  }, [selectedRepo, selectedBranch, dateFilter]); // All dependencies included
 
   const prBreakdownData = useMemo(() => {
     if (!analytics) return [];
@@ -268,68 +280,68 @@ export default function Reports() {
     ];
   }, [analytics]);
 
-return (
-  <div className="reports-container">
-    <Sidebar
-      isCollapsed={isSidebarCollapsed}
-      onToggleCollapse={handleSidebarToggle}
-      onGenerateReport={handleGenerateReport}
-      isGeneratingReport={isGeneratingReport}
-    />
-
-    <main className={`reports-main ${isSidebarCollapsed ? "sidebar-collapsed" : ""}`}>
-      <Header
-        repositories={repositories.map((r) => r.fullName)}
-        selectedRepository={selectedRepo}
-        onRepositoryChange={setSelectedRepo}
-        isLoading={pageLoading}
-        userInfo={userInfo}
-        onLogout={handleLogout}
-        onChangeDisplayName={handleChangeDisplayName}
-        notifications={[]}
-        notificationsLoading={false}
-        notificationsError=""
-        onRemoveNotification={() => {}}
-        onClearNotifications={() => {}}
+  return (
+    <div className="reports-container">
+      <Sidebar
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={handleSidebarToggle}
+        onGenerateReport={handleGenerateReport}
+        isGeneratingReport={isGeneratingReport}
       />
 
-      <div id="reports-content" className="reports-content">
-        <ReportsHeader />
-
-        <BranchTab
-          branches={branches}
-          selectedBranch={selectedBranch}
-          onChangeBranch={setSelectedBranch}
-          loading={branchLoading}
-          dateFilter={dateFilter}
-          onChangeDateFilter={setDateFilter}
-          dateFilters={DATE_FILTERS}
+      <main className={`reports-main ${isSidebarCollapsed ? "sidebar-collapsed" : ""}`}>
+        <Header
+          repositories={repositories.map((r) => r.fullName)}
+          selectedRepository={selectedRepo}
+          onRepositoryChange={setSelectedRepo}
+          isLoading={pageLoading}
+          userInfo={userInfo}
+          onLogout={handleLogout}
+          onChangeDisplayName={handleChangeDisplayName}
+          notifications={[]}
+          notificationsLoading={false}
+          notificationsError=""
+          onRemoveNotification={() => {}}
+          onClearNotifications={() => {}}
         />
 
-        {analyticsLoading && !analytics ? (
-          <div className="reports-loading-state">Loading analytics...</div>
-        ) : error || !analytics ? (
-          <div className="reports-error-state">
-            {error || "Could not load analytics data."}
-          </div>
-        ) : (
-          <>
-            <MetricsSummary summary={analytics.summary} />
+        <div id="reports-content" className="reports-content">
+          <ReportsHeader />
 
-            <section className="reports-charts-grid">
-              <CommitActivity data={analytics.commitActivity} />
-              <PullRequest data={prBreakdownData} />
-              <IssueOverview data={analytics.issueOverview} />
-            </section>
+          <BranchTab
+            branches={branches}
+            selectedBranch={selectedBranch}
+            onChangeBranch={setSelectedBranch}
+            loading={branchLoading}
+            dateFilter={dateFilter}
+            onChangeDateFilter={setDateFilter}
+            dateFilters={DATE_FILTERS}
+          />
 
-            <CodeModifications
-              rows={modifications}
-              loading={tableLoading}
-            />
-          </>
-        )}
-      </div>
-    </main>
-  </div>
-);
+          {analyticsLoading && !analytics ? (
+            <div className="reports-loading-state">Loading analytics...</div>
+          ) : error || !analytics ? (
+            <div className="reports-error-state">
+              {error || "Could not load analytics data."}
+            </div>
+          ) : (
+            <>
+              <MetricsSummary summary={analytics.summary} />
+
+              <section className="reports-charts-grid">
+                <CommitActivity data={analytics.commitActivity} />
+                <PullRequest data={prBreakdownData} />
+                <IssueOverview data={analytics.issueOverview} />
+              </section>
+
+              <CodeModifications
+                rows={modifications}
+                loading={tableLoading}
+              />
+            </>
+          )}
+        </div>
+      </main>
+    </div>
+  );
 }
